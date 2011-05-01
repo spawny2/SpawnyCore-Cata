@@ -251,6 +251,14 @@ EAIErrorLevel = 2
 #        Default: 0 (Disabled)
 #                 1 (Enable)
 #
+#    PersistentCharacterCleanFlags
+#        Description: Determines the character clean flags that remain set after cleanups.
+#                     This is a bitmask value, check /doc/CharacterDBCleanup.txt for more
+#                     information.
+#        Example:     14 - (Cleaning up skills, talents and spells will remain enabled after the
+#                           next cleanup)
+#        Default:     0  - (All cleanup methods will be disabled after the next cleanup)
+#
 ###############################################################################
 
 UseProcessors = 0
@@ -283,6 +291,7 @@ MaxCoreStuckTime = 0
 AddonChannel = 1
 MapUpdate.Threads = 1
 CleanCharacterDB = 0
+PersistentCharacterCleanFlags = 0
 
 ###############################################################################
 # SERVER LOGGING
@@ -776,20 +785,28 @@ ChatLogTimestamp = 0
 #         (100 copper = 1 silver)
 #        Default: 0
 #
+#    MaxConquestPoints
+#        Max conquest points that player can have, multiplied by 100.
+#        Default: 400000
+#
+#    StartConquestPoints
+#        Amount of conquest that new players will start with
+#        Default: 0
+#
 #    MaxHonorPoints
-#        Max honor points that player can have.
-#        Default: 4000
+#        Max honor points that player can have, multiplied by 100.
+#        Default: 400000
 #
 #    StartHonorPoints
 #        Amount of honor that new players will start with
 #        Default: 0
 #
 #    MaxJusticePoints
-#        Max justice points that player can have.
-#        Default: 4000
+#        Max justice points that player can have, multiplied by 100.
+#        Default: 400000
 #
 #    StartJusticePoints
-#        Amount of fustice points that new players will start with
+#        Amount of justice points that new players will start with
 #        Default: 0
 #
 #    RecruitAFriend.MaxLevel
@@ -1003,6 +1020,8 @@ MinDualSpecLevel = 30
 StartPlayerLevel = 1
 StartHeroicPlayerLevel = 55
 StartPlayerMoney = 0
+MaxConquestPoints = 4000
+StartConquestPoints = 0
 MaxHonorPoints = 4000
 StartHonorPoints = 0
 MaxJusticePoints = 4000

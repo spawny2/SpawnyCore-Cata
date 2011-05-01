@@ -29,6 +29,8 @@ void AddSC_example_creature();
 void AddSC_example_escort();
 void AddSC_example_gossip_codebox();
 void AddSC_example_misc();
+//player scripts
+void AddSC_player_mage_scripts();
 void AddSC_example_commandscript();
 
 // custom
@@ -54,9 +56,9 @@ void AddSC_SmartSCripts();
 
 //Commands
 void AddSC_account_commandscript();
-//void AddSC_achievement_commandscript();
+void AddSC_achievement_commandscript();
 //void AddSC_gm_commandscript();
-//void AddSC_npc_commandscript();
+void AddSC_npc_commandscript();
 //void AddSC_go_commandscript();
 //void AddSC_learn_commandscript();
 //void AddSC_modify_commandscript();
@@ -578,6 +580,7 @@ void AddSC_chat_log();
 void AddScripts()
 {
     AddExampleScripts();
+    AddPlayerScripts();
     AddSpellScripts();
     AddSC_SmartSCripts();
     AddCommandScripts();
@@ -602,6 +605,11 @@ void AddExampleScripts()
     AddSC_example_commandscript();
 }
 
+void AddPlayerScripts()
+{
+    AddSC_player_mage_scripts();
+}
+
 void AddSpellScripts()
 {
     AddSC_deathknight_spell_scripts();
@@ -623,9 +631,9 @@ void AddSpellScripts()
 void AddCommandScripts()
 {
     AddSC_account_commandscript();
-    //AddSC_achievement_commandscript();
+    AddSC_achievement_commandscript();
     //AddSC_gm_commandscript();
-    //AddSC_npc_commandscript();
+    AddSC_npc_commandscript();
     //AddSC_go_commandscript();
     //AddSC_learn_commandscript();
     //AddSC_modify_commandscript();

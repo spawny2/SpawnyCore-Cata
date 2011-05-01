@@ -1047,6 +1047,24 @@ void Aura::HandleAuraSpecificMods(AuraApplication const * aurApp, Unit * caster,
                         caster->CastCustomSpell(target, 63675, &basepoints0, NULL, NULL, true, NULL, GetEffect(0));
                     }
                 }
+				// Mind fly
+				else if (GetId() == 15407)
+				{
+					// Pain and Suffering: Rank 1
+					if (Aura* pain = caster->GetAura(47580)) {
+						if (Aura* swp = target->GetAura(589)) {
+							if (roll_chance_i(30))
+								swp->RefreshDuration();
+						}
+					}
+					// Pain and Suffering: Rank 2
+					if (Aura* pain = caster->GetAura(47581)) {
+						if (Aura* swp = target->GetAura(589)) {
+							if (roll_chance_i(60))
+								swp->RefreshDuration();
+						}
+					}
+				}
                 // Renew
                 else if (GetSpellProto()->SpellFamilyFlags[0] & 0x00000040 && GetEffect(0))
                 {
@@ -1982,6 +2000,8 @@ void UnitAura::FillTargetMap(std::map<Unit *, uint8> & targets, Unit * caster)
                     case SPELL_EFFECT_APPLY_AREA_AURA_RAID:
                         targetList.push_back(GetUnitOwner());
                         GetUnitOwner()->GetRaidMember(targetList, radius);
+						if (GetSpellProto()->SpellIconID == 691)
+							GetUnitOwner()->GetRaidMember(targetList, GetSpellRadiusForFriend(sSpellRadiusStore.LookupEntry(GetSpellProto()->EffectRadiusIndex[1])));
                         break;
                     case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
                     {
