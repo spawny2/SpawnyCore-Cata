@@ -1,1 +1,33 @@
 test
+1
+1
+2
+3
+4
+5
+sega
+[11:00:14] Spawn: kogato si dobavql novi failove
+[11:00:21] Spawn: ne moje direktno da se commitne
+[11:00:26] Spawn: trqbva da se dobavqt
+[11:00:34] Spawn: kato comandta e tupa
+[11:00:40] Spawn: git add IMETONAFAILA
+[11:00:50] Spawn: stiga da s v neq papka
+[11:00:53] Spawn: ili da mu okajesh putq
+[11:01:00] Spawn: do papkata
+[11:01:12] thousandshits: gotovo
+[11:01:13] Spawn: posle pravish commit-a
+[11:01:28] Spawn: git commit -m 'first commit'
+[11:01:33] Spawn: kato primer prosto
+[11:01:41] Spawn: shte ti zaredi
+[11:01:50] Spawn: i pak pravish git push origin master
+[11:01:55] Spawn: da go kachi v neta
+[11:02:05] Spawn: sega
+[11:02:10] Spawn: git commit ima nqkolko opcii
+[11:02:30] Spawn: -m ' ineshto tuka' ti ozaglavqva comit-a
+[11:02:36] Spawn: obache kogato si pipal mnogo neshta
+[11:02:44] Spawn: az polzvam git commit -a
+[11:02:49] Spawn: koeto shte reche all
+[11:02:58] Spawn: i ti dava ti da si napishesh commit-a
+[11:03:08] Spawn: kato ti otvarq edna prosto tiq
+[11:03:14] Spawn: shte q vidim i neq sled malko
+[11:03:28] Spawn: q da vidim pusna li purvoto v neta
