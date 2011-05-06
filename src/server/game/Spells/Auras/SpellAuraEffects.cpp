@@ -1305,6 +1305,16 @@ void AuraEffect::UpdatePeriodic(Unit *caster)
                             break;
                     }
                     break;
+				case SPELLFAMILY_WARRIOR:
+					{
+						switch(auraId)
+						{
+							case 46924: // Bladestorm
+								triggerSpellId = 50622; // Whirldwind
+								return;
+						}
+						break;
+					}
                 case SPELLFAMILY_MAGE:
                     if (GetId() == 55342)// Mirror Image
                         m_isPeriodic = false;
@@ -1698,6 +1708,25 @@ void AuraEffect::PeriodicTick(AuraApplication * aurApp, Unit * caster) const
 
                 damage = uint32(target->CountPctFromMaxHealth(damage));
                 damage = uint32(damage * TakenTotalMod);
+				
+				switch (m_spellProto->Id)
+				{
+					uint32 dmg;
+				case 16488: // Blood Craze Rank 1
+					dmg = caster->GetMaxHealth() / 100 * 0.2;
+					damage = dmg;
+					break;
+				case 16490: // Blod Craze Rank 2
+					dmg = caster->GetMaxHealth() / 100 * 0.4;
+					damage = dmg;
+					break;
+				case 16491: // Blod Craze Rank 3
+					dmg = caster->GetMaxHealth() / 100 * 0.6;
+					damage = dmg;
+					break;
+				default:
+					break;
+				}
 			}
             else
             {
