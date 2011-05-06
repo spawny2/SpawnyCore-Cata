@@ -3586,6 +3586,12 @@ void SpellMgr::LoadSpellCustomAttr()
 
         switch (i)
         {
+		case 1680: // Whirlwind  (Fury)
+			spellInfo->EffectRadiusIndex[0] = 8;
+			spellInfo->EffectRadiusIndex[1] = 8;
+			spellInfo->EffectRadiusIndex[2] = 8;
+			count++;
+			break;
 		case 50622: // Whirlwind (triggered by Bladestorm)
 			spellInfo->EffectRadiusIndex[0] = 8;
 			spellInfo->EffectRadiusIndex[1] = 8;
