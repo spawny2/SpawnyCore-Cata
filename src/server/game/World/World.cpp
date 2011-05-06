@@ -1220,6 +1220,9 @@ void World::LoadConfigSettings(bool reload)
     // Dungeon finder
     m_bool_configs[CONFIG_DUNGEON_FINDER_ENABLE] = sConfig->GetBoolDefault("DungeonFinder.Enable", false);
 
+    // Max instances per hour
+    m_int_configs[CONFIG_MAX_INSTANCES_PER_HOUR] = sConfig->GetIntDefault("AccountInstancesPerHour", 5);
+
     // AutoBroadcast
     m_bool_configs[CONFIG_AUTOBROADCAST] = sConfig->GetBoolDefault("AutoBroadcast.On", false);
     m_int_configs[CONFIG_AUTOBROADCAST_CENTER] = sConfig->GetIntDefault("AutoBroadcast.Center", 0);
@@ -2649,7 +2652,7 @@ void World::InitDailyQuestResetTime()
     if (result)
     {
         Field *fields = result->Fetch();
-        mostRecentQuestTime = (time_t)fields[0].GetUInt64();
+        mostRecentQuestTime = time_t(fields[0].GetUInt32());
     }
     else
         mostRecentQuestTime = 0;
@@ -2822,7 +2825,7 @@ void World::LoadWorldStates()
     do
     {
         Field *fields = result->Fetch();
-        m_worldstates[fields[0].GetUInt32()] = fields[1].GetUInt64();
+        m_worldstates[fields[0].GetUInt32()] = fields[1].GetUInt32();
         
         ++count;
     }

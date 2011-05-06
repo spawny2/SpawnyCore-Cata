@@ -620,17 +620,17 @@ void Creature::RegenerateMana()
             float ManaIncreaseRate = sWorld->getRate(RATE_POWER_MANA);
             float Spirit = GetStat(STAT_SPIRIT);
 
-            addvalue = uint32((Spirit/5.0f + 17.0f) * ManaIncreaseRate);
+            addvalue = uint32((Spirit / 5.0f + 17.0f) * ManaIncreaseRate);
         }
     }
     else
-        addvalue = maxValue/3;
+        addvalue = maxValue / 3;
 
     // Apply modifiers (if any).
     AuraEffectList const& ModPowerRegenPCTAuras = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
     for (AuraEffectList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
         if ((*i)->GetMiscValue() == POWER_MANA)
-            addvalue = uint32(addvalue * ((*i)->GetAmount() + 100) / 100.0f);
+            AddPctN(addvalue, (*i)->GetAmount());
 
     addvalue += GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, POWER_MANA) * CREATURE_REGEN_INTERVAL / (5 * IN_MILLISECONDS);
 
@@ -667,7 +667,7 @@ void Creature::RegenerateHealth()
     // Apply modifiers (if any).
     AuraEffectList const& ModPowerRegenPCTAuras = GetAuraEffectsByType(SPELL_AURA_MOD_HEALTH_REGEN_PERCENT);
     for (AuraEffectList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
-        addvalue = uint32(addvalue * ((*i)->GetAmount() + 100) / 100.0f);
+        AddPctN(addvalue, (*i)->GetAmount());
 
     addvalue += GetTotalAuraModifier(SPELL_AURA_MOD_REGEN) * CREATURE_REGEN_INTERVAL  / (5 * IN_MILLISECONDS);
 
@@ -1404,6 +1404,9 @@ bool Creature::canStartAttack(Unit const* who, bool force) const
     if (isCivilian())
         return false;
 
+	if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE))
+        return false;
+
     if (!canFly() && (GetDistanceZ(who) > CREATURE_Z_ATTACK_RANGE + m_CombatDistance))
         //|| who->IsControlledByPlayer() && who->IsFlying()))
         // we cannot check flying for other creatures, too much map/vmap calculation
@@ -1503,6 +1506,9 @@ void Creature::setDeathState(DeathState s)
         //Dismiss group if is leader
         if (m_formation && m_formation->getLeader() == this)
             m_formation->FormationReset(true);
+
+        if (ZoneScript* zoneScript = GetZoneScript())
+            zoneScript->OnCreatureDeath(this);
 
         if ((canFly() || IsFlying()) && FallGround())
             return;
@@ -1898,6 +1904,9 @@ bool Creature::CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction /
 
     // we don't need help from non-combatant ;)
     if (isCivilian())
+        return false;
+
+	if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_PASSIVE))
         return false;
 
     // skip fighting creature

@@ -1471,7 +1471,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 }
 
                 //Any effect which causes you to lose control of your character will supress the starfall effect.
-                if (m_caster->HasUnitState(UNIT_STAT_CONTROLLED))
+                if (m_caster->HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_FLEEING | UNIT_STAT_ROOT | UNIT_STAT_CONFUSED))
                     return;
 
                 m_caster->CastSpell(unitTarget, damage, true);
@@ -4121,11 +4121,11 @@ void Spell::SpellDamageWeaponDmg(SpellEffIndex effIndex)
             if (m_spellInfo->SpellFamilyFlags[1] & 0x40)
             {
                 // Player can apply only 58567 Sunder Armor effect.
-                bool needCast = !unitTarget->HasAura(58567, m_caster->GetGUID());
+                bool needCast = !unitTarget->HasAura(58567);
                 if (needCast)
                     m_caster->CastSpell(unitTarget, 58567, true);
 
-                if (Aura * aur = unitTarget->GetAura(58567, m_caster->GetGUID()))
+                if (Aura * aur = unitTarget->GetAura(58567))
                 {
                     // 58388 - Glyph of Devastate dummy aura.
                     if (int32 num = (needCast ? 0 : 1) + (m_caster->HasAura(58388) ? 1 : 0))

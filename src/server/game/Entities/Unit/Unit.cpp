@@ -7442,7 +7442,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, AuraEffect* trigger
                 {
                      if ((*i)->GetCasterGUID() != GetGUID() || (*i)->GetId() != 50536)
                          continue;
-                     basepoints0 += ((*i)->GetAmount() * ((*i)->GetTotalTicks() - ((*i)->GetTickNumber()))) / (*i)->GetTotalTicks();
+                     basepoints0 += (*i)->GetAmount() * ((*i)->GetTotalTicks() - ((*i)->GetTickNumber()));
                      break;
                 }
 
@@ -10440,6 +10440,36 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
                     if (pVictim->GetDiseasesByCaster(owner->GetGUID()) > 0)
                         DoneTotalMod *= (100.0f + aurEff->GetAmount()) / 100.0f;
 
+			// Rune Strike
+            if (spellProto->SpellFamilyFlags[1] & 0x20000000)
+                {
+                    float ApCoeffMod = 1.0f;
+                    // Impurity (dummy effect)
+                    if (GetTypeId() == TYPEID_PLAYER)
+                    {
+                        PlayerSpellMap playerSpells = this->ToPlayer()->GetSpellMap();
+                        for (PlayerSpellMap::const_iterator itr = playerSpells.begin(); itr != playerSpells.end(); ++itr)
+                        {
+                            if (itr->second->state == PLAYERSPELL_REMOVED || itr->second->disabled)
+                                continue;
+                            switch (itr->first)
+                            {
+                                case 49220:
+                                case 49633:
+                                case 49635:
+                                case 49636:
+                                case 49638:
+                                {
+                                    if (const SpellEntry *proto=sSpellStore.LookupEntry(itr->first))
+                                        AddPctN(ApCoeffMod, SpellMgr::CalculateSpellEffectAmount(proto, 0));
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    DoneTotalMod += GetTotalAttackPowerValue(BASE_ATTACK) * 0.2 * ApCoeffMod;
+                }
+
             // Impurity (dummy effect)
             if (GetTypeId() == TYPEID_PLAYER)
             {
@@ -10649,6 +10679,10 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
             coeff *= 100.0f;
             modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_BONUS_MULTIPLIER, coeff);
             coeff /= 100.0f;
+			// DoneAdvertisedBenefit should be modified by owner auras
+            if (isPet())
+                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_ALL_EFFECTS, DoneAdvertisedBenefit);
+
         }
         DoneTotal += int32(DoneAdvertisedBenefit * coeff * coeff2);
     }
@@ -10736,7 +10770,7 @@ int32 Unit::SpellBaseDamageBonusForVictim(SpellSchoolMask schoolMask, Unit *pVic
 bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType) const
 {
     // Mobs can't crit with spells.
-    if (IS_CREATURE_GUID(GetGUID()))
+    if (IS_CREATURE_GUID(GetGUID()) && !(GetOwner() && GetOwner()->GetTypeId() == TYPEID_PLAYER))
         return false;
 
     // not critting spell
@@ -10989,6 +11023,9 @@ uint32 Unit::SpellHealingBonus(Unit *pVictim, SpellEntry const *spellProto, uint
 
     // no bonus for heal potions/bandages
     if (spellProto->SpellFamilyName == SPELLFAMILY_POTION)
+        return healamount;
+	// and Warlock's Healthstones      
+    if (spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && (spellProto->SpellFamilyFlags[0] & 0x10000))
         return healamount;
 
     // Healing Done
@@ -11466,7 +11503,7 @@ bool Unit::IsDamageToThreatSpell(SpellEntry const * spellInfo) const
         case SPELLFAMILY_DEATHKNIGHT:
             if (spellInfo->SpellFamilyFlags[1] == 0x20000000) // Rune Strike
                 return true;
-			if (spellInfo->SpellFamilyFlags[0] == 0x20) // Death and Decay
+			if (spellInfo->SpellFamilyFlags[2] == 0x8) // Death and Decay
                 return true;
             break;
         case SPELLFAMILY_WARRIOR:
@@ -16729,9 +16766,7 @@ void Unit::EnterVehicle(Vehicle *vehicle, int8 seatId, bool byAura)
         WorldPacket data(SMSG_ON_CANCEL_EXPECTED_RIDE_VEHICLE_AURA, 0);
         thisPlr->GetSession()->SendPacket(&data);
 
-        data.Initialize(SMSG_BREAK_TARGET, 7);
-        data.append(vehicle->GetBase()->GetPackGUID());
-        thisPlr->GetSession()->SendPacket(&data);
+        thisPlr->SendClearFocus(vehicle->GetBase());
     }
 
     SetControlled(true, UNIT_STAT_ROOT);

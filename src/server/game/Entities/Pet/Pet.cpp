@@ -224,7 +224,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
 
     SetDisplayId(fields[3].GetUInt32());
     SetNativeDisplayId(fields[3].GetUInt32());
-    uint32 petlevel = fields[4].GetUInt32();
+    uint32 petlevel = fields[4].GetUInt16();
     SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
     SetName(fields[8].GetString());
 
@@ -299,7 +299,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     map->Add(this->ToCreature());
 
     m_resetTalentsCost = fields[15].GetUInt32();
-    m_resetTalentsTime = fields[16].GetUInt64();
+    m_resetTalentsTime = time_t(fields[16].GetUInt32());
     InitTalentForLevel();                                   // set original talents points before spell loading
 
     uint32 timediff = uint32(time(NULL) - fields[14].GetUInt32());
@@ -625,11 +625,11 @@ void Creature::Regenerate(Powers power)
     AuraEffectList const& ModPowerRegenPCTAuras = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
     for (AuraEffectList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
         if (Powers((*i)->GetMiscValue()) == power)
-            addvalue *= ((*i)->GetAmount() + 100) / 100.0f;
+            AddPctN(addvalue, (*i)->GetAmount());
 
     addvalue += GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, power) * (isHunterPet()? PET_FOCUS_REGEN_INTERVAL : CREATURE_REGEN_INTERVAL) / (5 * IN_MILLISECONDS);
 
-    ModifyPower(power, (int32)addvalue);
+    ModifyPower(power, int32(addvalue));
 }
 
 void Pet::LooseHappiness()
@@ -1046,7 +1046,31 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
                         SetCreateMana(28 + 10*petlevel);
                         SetCreateHealth(28 + 30*petlevel);
                     }
-                    SetBonusDamage(int32(m_owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.5f));
+                    // Impurity
+                    float impurityMod = 1.0f;
+                    if (Player * p_owner = m_owner->ToPlayer())
+                    {
+                        PlayerSpellMap playerSpells = p_owner->GetSpellMap();
+                        for (PlayerSpellMap::const_iterator itr = playerSpells.begin(); itr != playerSpells.end(); ++itr)
+                        {
+                            if (itr->second->state == PLAYERSPELL_REMOVED || itr->second->disabled)
+                                continue;
+                            switch (itr->first)
+                            {
+                                case 49220:
+                                case 49633:
+                                case 49635:
+                                case 49636:
+                                case 49638:
+                                {
+                                    if (const SpellEntry *proto=sSpellStore.LookupEntry(itr->first))
+                                        AddPctN(impurityMod, SpellMgr::CalculateSpellEffectAmount(proto, 0));
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    SetBonusDamage(int32(m_owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.5f * impurityMod));
                     SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)));
                     SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)));
                     break;
@@ -1123,7 +1147,7 @@ void Pet::_LoadSpellCooldowns()
             Field *fields = result->Fetch();
 
             uint32 spell_id = fields[0].GetUInt32();
-            time_t db_time  = (time_t)fields[1].GetUInt64();
+            time_t db_time  = time_t(fields[1].GetUInt32());
 
             if (!sSpellStore.LookupEntry(spell_id))
             {
@@ -1162,7 +1186,7 @@ void Pet::_SaveSpellCooldowns(SQLTransaction& trans)
             m_CreatureSpellCooldowns.erase(itr++);
         else
         {
-            trans->PAppend("INSERT INTO pet_spell_cooldown (guid,spell,time) VALUES ('%u', '%u', '" UI64FMTD "')", m_charmInfo->GetPetNumber(), itr->first, uint64(itr->second));
+            trans->PAppend("INSERT INTO pet_spell_cooldown (guid,spell,time) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, uint32(itr->second));
             ++itr;
         }
     }
@@ -1954,7 +1978,7 @@ void Pet::CastPetAura(PetAura const* aura)
 
     if (auraId == 35696)                                      // Demonic Knowledge
     {
-        int32 basePoints = int32(aura->GetDamage() * (GetStat(STAT_STAMINA) + GetStat(STAT_INTELLECT)) / 100);
+        int32 basePoints = CalculatePctF(aura->GetDamage(), GetStat(STAT_STAMINA) + GetStat(STAT_INTELLECT));
         CastCustomSpell(this, auraId, &basePoints, NULL, NULL, true);
     }
     else
