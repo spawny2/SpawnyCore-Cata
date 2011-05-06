@@ -1305,16 +1305,6 @@ void AuraEffect::UpdatePeriodic(Unit *caster)
                             break;
                     }
                     break;
-				case SPELLFAMILY_WARRIOR:
-					{
-						switch(auraId)
-						{
-							case 46924: // Bladestorm
-								triggerSpellId = 50622; // Whirldwind
-								return;
-						}
-						break;
-					}
                 case SPELLFAMILY_MAGE:
                     if (GetId() == 55342)// Mirror Image
                         m_isPeriodic = false;
@@ -1708,7 +1698,7 @@ void AuraEffect::PeriodicTick(AuraApplication * aurApp, Unit * caster) const
 
                 damage = uint32(target->CountPctFromMaxHealth(damage));
                 damage = uint32(damage * TakenTotalMod);
-				
+
 				switch (m_spellProto->Id)
 				{
 					uint32 dmg;
@@ -2475,6 +2465,16 @@ void AuraEffect::TriggerSpell(Unit *target, Unit *caster) const
                 }
                 break;
             }
+			case SPELLFAMILY_WARRIOR:
+			{
+				switch(auraId)
+				{
+					case 46924: // Bladestorm
+						triggerSpellId = 50622; // Whirldwind
+						return;
+				}
+				break;
+			}
             case SPELLFAMILY_MAGE:
             {
                 switch(auraId)
