@@ -1290,6 +1290,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 m_caster->CastSpell(m_caster,51755,true);
             break;
         case SPELLFAMILY_PRIEST:
+		{
             switch (m_spellInfo->Id)
             {
             	case 21562: // Power Word:Fortitude
@@ -1320,6 +1321,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 }
             }
             break;
+		}
         case SPELLFAMILY_MAGE:
         {
             // Cone of Cold
