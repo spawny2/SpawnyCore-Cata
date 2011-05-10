@@ -3762,7 +3762,25 @@ void Spell::finish(bool ok)
     // Stop Attack for some spells
     if (m_spellInfo->Attributes & SPELL_ATTR0_STOP_ATTACK_TARGET)
         m_caster->AttackStop();
+<<<<<<< HEAD
 	
+=======
+
+	if(m_spellInfo->Id == 30455) // Ice Lance
+	{
+		if(m_caster->HasAura(44544)) // Fingers of Frost
+		{
+			m_caster->RemoveAuraFromStack(44544);
+		}
+	}
+		if(m_spellInfo->Id == 44572) // Deep Freeze
+	{
+		if(m_caster->HasAura(44544)) // Fingers of Frost
+		{
+			m_caster->RemoveAuraFromStack(44544);
+		}
+	}
+>>>>>>> upstream/master
 	if(m_spellInfo->Id == 2061) // Flash Heal
 	{
 		if(m_caster->HasAura(88688)) // Surge of Light
