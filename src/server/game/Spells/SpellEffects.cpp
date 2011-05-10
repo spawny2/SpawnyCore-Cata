@@ -1292,6 +1292,27 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
         case SPELLFAMILY_PRIEST:
             switch (m_spellInfo->Id)
             {
+            	case 21562: // Power Word:Fortitude
+            	{
+            		if (m_caster->GetTypeId() == TYPEID_PLAYER)
+            		{
+            			std::list<Unit*> PartyMembers;
+            			m_caster->GetPartyMembers(PartyMembers);
+            			bool Continue = false;
+            			uint32 player = 0;
+            			for (std::list<Unit*>::iterator itr = PartyMembers.begin(); itr != PartyMembers.end(); ++itr) // If caster is in party with a player
+            			{
+            				++player;
+            				if (Continue == false && player > 1)
+            					Continue = true;
+            			}
+            			if (Continue == true)
+            				m_caster->CastSpell(unitTarget, 79105, true); // Power Word:Fortitude (For all)
+            			else
+            				m_caster->CastSpell(unitTarget, 79104, true); // Power Word:Fortitude (Only for caster)
+            		}
+            		break;
+            	}
                 case 73325: // Leap of faith
                 {
                     unitTarget->CastSpell(m_caster, 92832, false);
