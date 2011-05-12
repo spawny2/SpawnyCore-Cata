@@ -33,17 +33,24 @@
 #include "UpdateData.h"
 #include "ObjectAccessor.h"
 
-#define JusticeGossip 2
-#define ConquestGossip 3
-#define MSG_GOSSIP_TEXT_CHANGE           "Exchange 1x Mark of Remulos for 15x Justice Points."
-#define MSG_GOSSIP_TEXT_CHANGE_2         "Exchange 1x Mark of Cenarius for 1 Tol Barad Commendation Point."
-#define MSG_LOW_LEVEL                    "Your level is too low!"
-#define MSG_NOT_ENOUGH                   "You don't have any items left."
-#define CHANGE_ITEM_0              		 22484
-#define CHANGE_ITEM_1             		 21515
-#define CHANGE_ITEM_2              		 21508
-#define JUSTICE							 1500
-#define TOLBARAD						 100
+#define JusticeGossip 					2
+#define ConquestGossip 					3
+#define JCGossip 						4
+#define CookGossip 						5
+#define MSG_GOSSIP_TEXT_CHANGE          "Exchange 1x Mark of Remulos for 15x Justice Points."
+#define MSG_GOSSIP_TEXT_CHANGE_2        "Exchange 1x Mark of Cenarius for 1 Tol Barad Commendation Point."
+#define MSG_GOSSIP_TEXT_CHANGE_3		"Exchange 1x Necrotic Rune for 1 Illustrious Jewelcrafter Point."
+#define MSG_GOSSIP_TEXT_CHANGE_4		"Exchange 1x Gri'lek's Blood for 1 Chef's Award Point"
+#define MSG_LOW_LEVEL                   "Your level is too low!"
+#define MSG_NOT_ENOUGH                  "You don't have any items left."
+#define CHANGE_ITEM_1             		21515
+#define CHANGE_ITEM_2              	 	21508
+#define CHANGE_ITEM_3              		22484
+#define CHANGE_ITEM_4              		19939
+#define JUSTICE							1500
+#define TOLBARAD						100
+#define JC								100
+#define Cook							100
 
 class npc_change: public CreatureScript {
 public:
@@ -54,6 +61,8 @@ public:
 	bool OnGossipHello(Player* pPlayer, Creature* pCreature) {
 		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, MSG_GOSSIP_TEXT_CHANGE, GOSSIP_SENDER_MAIN, JusticeGossip);
 		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, MSG_GOSSIP_TEXT_CHANGE_2, GOSSIP_SENDER_MAIN, ConquestGossip);
+		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, MSG_GOSSIP_TEXT_CHANGE_3, GOSSIP_SENDER_MAIN, JCGossip);
+		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, MSG_GOSSIP_TEXT_CHANGE_4, GOSSIP_SENDER_MAIN, CookGossip);
 		pPlayer->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, pCreature->GetGUID());
 		return true;
 	}
@@ -72,7 +81,7 @@ public:
 				pPlayer->CLOSE_GOSSIP_MENU();
 				break;
 			}
-		case JusticeGossip:
+		case JusticeGossip: {
 			if (pPlayer->GetItemByEntry(CHANGE_ITEM_1)) {
 				uint32 count = 1;
 				pPlayer->DestroyItemCount(CHANGE_ITEM_1, count, true, true);
@@ -82,19 +91,11 @@ public:
 						pPlayer->GetGUID());
 				pPlayer->CLOSE_GOSSIP_MENU();
 				break;
-			} else {
-				if (pPlayer->GetItemByEntry(CHANGE_ITEM_0)) {
-					uint32 count = 1;
-					pPlayer->DestroyItemCount(CHANGE_ITEM_0, count, true, true);
-					pPlayer->ModifyCurrency(395, (JUSTICE));
-					pCreature->MonsterWhisper(
-							"Congratz, you've been rewarded with 15 Justice Points.",
-							pPlayer->GetGUID());
-					pPlayer->CLOSE_GOSSIP_MENU();
-					break;
-				}
 			}
-		case ConquestGossip:
+			pCreature->MonsterWhisper(MSG_NOT_ENOUGH, pPlayer->GetGUID());
+			pPlayer->CLOSE_GOSSIP_MENU();
+		}
+		case ConquestGossip: {
 			if (pPlayer->GetItemByEntry(CHANGE_ITEM_2)) {
 				uint32 count = 1;
 				pPlayer->DestroyItemCount(CHANGE_ITEM_2, count, true, true);
@@ -104,9 +105,39 @@ public:
 						pPlayer->GetGUID());
 				pPlayer->CLOSE_GOSSIP_MENU();
 				break;
-			} else {
-				pCreature->MonsterWhisper(MSG_NOT_ENOUGH, pPlayer->GetGUID());
 			}
+			pCreature->MonsterWhisper(MSG_NOT_ENOUGH, pPlayer->GetGUID());
+			pPlayer->CLOSE_GOSSIP_MENU();
+		}
+		case JCGossip: {
+			if (pPlayer->GetItemByEntry(CHANGE_ITEM_3)) {
+				uint32 count = 1;
+				pPlayer->DestroyItemCount(CHANGE_ITEM_3, count, true, true);
+				pPlayer->ModifyCurrency(361, (JC));
+				pCreature->MonsterWhisper(
+						"Congratz, you've been rewarded with 1 Illustrious Jewelcrafter's Point.",
+						pPlayer->GetGUID());
+				pPlayer->CLOSE_GOSSIP_MENU();
+				break;
+			}
+			pCreature->MonsterWhisper(MSG_NOT_ENOUGH, pPlayer->GetGUID());
+			pPlayer->CLOSE_GOSSIP_MENU();
+		}
+		case CookGossip: {
+			if (pPlayer->GetItemByEntry(CHANGE_ITEM_4)) {
+				uint32 count = 1;
+				pPlayer->DestroyItemCount(CHANGE_ITEM_4, count, true, true);
+				pPlayer->ModifyCurrency(402, (Cook));
+				pCreature->MonsterWhisper(
+						"Congratz, you've been rewarded with 1 Chef's Award Point",
+						pPlayer->GetGUID());
+				pPlayer->CLOSE_GOSSIP_MENU();
+				break;
+			}
+			pCreature->MonsterWhisper(MSG_NOT_ENOUGH, pPlayer->GetGUID());
+			pPlayer->CLOSE_GOSSIP_MENU();
+		}
+			pCreature->MonsterWhisper(MSG_NOT_ENOUGH, pPlayer->GetGUID());
 		default:
 			pPlayer->CLOSE_GOSSIP_MENU();
 		}
