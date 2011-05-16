@@ -952,9 +952,12 @@ void AuraEffect::CalculatePeriodic(Unit *caster, bool create)
         {
             // Haste modifies periodic time of channeled spells
             if (IsChanneledSpell(m_spellProto))
-                caster->ModSpellCastTime(m_spellProto, m_amplitude);
+            {
+                if (m_spellProto->AttributesEx5 & SPELL_ATTR5_HASTE_AFFECT_DURATION)
+                    caster->ModSpellCastTime(m_spellProto, m_amplitude);
+            }
             // and periodic time of auras affected by SPELL_AURA_PERIODIC_HASTE
-            if (caster->HasAuraTypeWithAffectMask(SPELL_AURA_PERIODIC_HASTE, m_spellProto) || m_spellProto->AttributesEx5 & SPELL_ATTR5_HASTE_AFFECT_DURATION)
+            else if (caster->HasAuraTypeWithAffectMask(SPELL_AURA_PERIODIC_HASTE, m_spellProto) || m_spellProto->AttributesEx5 & SPELL_ATTR5_HASTE_AFFECT_DURATION)
                 m_amplitude = int32(m_amplitude * caster->GetFloatValue(UNIT_MOD_CAST_SPEED));
         }
     }
@@ -3184,7 +3187,7 @@ void AuraEffect::HandlePhase(AuraApplication const *aurApp, uint8 mode, bool app
     }
 
     // need triggering visibility update base at phase update of not GM invisible (other GMs anyway see in any phases)
-    if (!target->IsVisible())
+    if (target->IsVisible())
         target->UpdateObjectVisibility();
 }
 
@@ -3334,7 +3337,11 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const *aurApp, uint8 mo
         {
             target->SetShapeshiftForm(FORM_NONE);
             if (target->getClass() == CLASS_DRUID)
+            {
                 target->setPowerType(POWER_MANA);
+                // Remove movement impairing effects also when shifting out
+                target->RemoveMovementImpairingAuras();
+            }
         }
 
         if (modelid > 0)
@@ -5725,7 +5732,7 @@ void AuraEffect::HandleModDamageDone(AuraApplication const *aurApp, uint8 mode, 
 
 void AuraEffect::HandleModDamagePercentDone(AuraApplication const *aurApp, uint8 mode, bool apply) const
 {
-    if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
+    if (!(mode & AURA_EFFECT_HANDLE_REAL))
         return;
 
     Unit *target = aurApp->GetTarget();

@@ -209,6 +209,9 @@ class WorldSession
         void SendSetPhaseShift(uint32 phaseShift, uint32 MapID = 0);
         void SendQueryTimeResponse();
 
+        void SendAuthResponse(uint8 code, bool shortForm, uint32 queuePos = 0);
+        void SendClientCacheVersion(uint32 version);
+
         AccountTypes GetSecurity() const { return _security; }
         uint32 GetAccountId() const { return _accountId; }
         Player* GetPlayer() const { return _player; }
@@ -305,10 +308,9 @@ class WorldSession
         bool SendItemInfo(uint32 itemid, WorldPacket data);
         //auction
         void SendAuctionHello(uint64 guid, Creature * unit);
-        void SendAuctionCommandResult(uint32 auctionId, uint32 Action, uint32 ErrorCode, uint64 bidError = 0);
+        void SendAuctionCommandResult(uint32 auctionId, uint32 Action, uint32 ErrorCode, uint32 bidError = 0);
         void SendAuctionBidderNotification(uint32 location, uint32 auctionId, uint64 bidder, uint32 bidSum, uint32 diff, uint32 item_template);
         void SendAuctionOwnerNotification(AuctionEntry * auction);
-        void SendAuctionRemovedNotification(AuctionEntry * auction);
 
         //Item Enchantment
         void SendEnchantmentLog(uint64 Target, uint64 Caster,uint32 ItemID,uint32 SpellID);
@@ -887,8 +889,14 @@ class WorldSession
         void moveItems(Item* myItems[], Item* hisItems[]);
 
         // logging helper
-        void LogUnexpectedOpcode(WorldPacket *packet, const char * reason);
+        void LogUnexpectedOpcode(WorldPacket *packet, const char* status, const char *reason);
         void LogUnprocessedTail(WorldPacket *packet);
+
+        bool CharCanLogin(uint32 lowGUID)
+        {
+            return _allowedCharsToLogin.find(lowGUID) != _allowedCharsToLogin.end();
+        }
+        std::set<uint32> _allowedCharsToLogin;
 
         uint32 m_GUIDLow;                                   // set loggined or recently logout player (while m_playerRecentlyLogout set)
         Player *_player;

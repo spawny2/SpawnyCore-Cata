@@ -219,6 +219,7 @@ void WorldSession::HandleCharEnum(QueryResult result)
 
     data << num;
 
+    _allowedCharsToLogin.clear();
     if (result)
     {
         do
@@ -226,7 +227,10 @@ void WorldSession::HandleCharEnum(QueryResult result)
             uint32 guidlow = (*result)[0].GetUInt32();
             sLog->outDetail("Loading char guid %u from account %u.",guidlow,GetAccountId());
             if (Player::BuildEnumData(result, &data))
+            {
+                _allowedCharsToLogin.insert(guidlow);
                 ++num;
+            }
         }
         while (result->NextRow());
     }
@@ -315,13 +319,20 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket & recv_data)
     }
 
     ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
-    ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race_);
-
-    if (!classEntry || !raceEntry)
+    if (!classEntry)
     {
         data << (uint8)CHAR_CREATE_FAILED;
         SendPacket(&data);
-        sLog->outError("Class: %u or Race %u not found in DBC (Wrong DBC files?) or Cheater?", class_, race_);
+        sLog->outError("Class (%u) not found in DBC while creating new char for account (ID: %u): wrong DBC files or cheater?", class_, GetAccountId());
+        return;
+    }
+
+    ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race_);
+    if (!raceEntry)
+    {
+        data << (uint8)CHAR_CREATE_FAILED;
+        SendPacket(&data);
+        sLog->outError("Race (%u) not found in DBC while creating new char for account (ID: %u): wrong DBC files or cheater?", race_, GetAccountId());
         return;
     }
 
@@ -779,6 +790,12 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket & recv_data)
     sLog->outStaticDebug("WORLD: Recvd Player Logon Message");
 
     recv_data >> playerGuid;
+
+    if (!CharCanLogin(playerGuid))
+    {
+        KickPlayer();
+        return;
+    }
 
     LoginQueryHolder *holder = new LoginQueryHolder(GetAccountId(), playerGuid);
     if (!holder->Initialize())

@@ -171,20 +171,27 @@ void InstanceSave::SaveToDB()
 {
     // save instance data too
     std::string data;
+    uint32 completedEncounters = 0;
 
-    Map *map = sMapMgr->FindMap(GetMapId(),m_instanceid);
+    Map *map = sMapMgr->FindMap(GetMapId(), m_instanceid);
     if (map)
     {
         ASSERT(map->IsDungeon());
-        if (InstanceScript *iData = ((InstanceMap*)map)->GetInstanceScript())
+        if (InstanceScript *instanceScript = ((InstanceMap*)map)->GetInstanceScript())
         {
-            data = iData->GetSaveData();
-            if (!data.empty())
-                CharacterDatabase.escape_string(data);
+            data = instanceScript->GetSaveData();
+            completedEncounters = instanceScript->GetCompletedEncounterMask();
         }
     }
 
-    CharacterDatabase.PExecute("INSERT INTO instance VALUES ('%u', '%u', '%u', '%u', '%s')", m_instanceid, GetMapId(), (uint32)GetResetTimeForDB(), GetDifficulty(), data.c_str());
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_ADD_INSTANCE_SAVE);
+    stmt->setUInt32(0, m_instanceid);
+    stmt->setUInt16(1, GetMapId());
+    stmt->setUInt32(2, uint32(GetResetTimeForDB()));
+    stmt->setUInt8(3, uint8(GetDifficulty()));
+    stmt->setUInt32(4, completedEncounters);
+    stmt->setString(5, data);
+    CharacterDatabase.Execute(stmt);
 }
 
 time_t InstanceSave::GetResetTimeForDB()
@@ -284,7 +291,7 @@ void InstanceSaveManager::CleanupAndPackInstances()
     //CharacterDatabase.DirectExecute("ALTER TABLE instance ADD newid INT UNSIGNED AUTO_INCREMENT, ADD INDEX(newid)");
 
     // Update old ids
-    CharacterDatabase.DirectExecute("UPDATE account_instance_times  AS tmp LEFT JOIN instance ON tmp.instanceId  = instance.id SET tmp.instanceId  = instance.newid WHERE tmp.instanceId  > 0");
+    CharacterDatabase.DirectExecute("UPDATE account_instance_times  AS tmp LEFT JOIN instance ON tmp.instanceId  = instance.id SET tmp.instanceId  = instance.newid WHERE tmp.instanceId  > 0 AND instance.newid IS NOT NULL"); // can be null and must not be cleaned! its an "already reset" but still limited case
     CharacterDatabase.DirectExecute("UPDATE corpse                  AS tmp LEFT JOIN instance ON tmp.instance    = instance.id SET tmp.instance    = instance.newid WHERE tmp.instance    > 0");
     CharacterDatabase.DirectExecute("UPDATE character_instance      AS tmp LEFT JOIN instance ON tmp.instance    = instance.id SET tmp.instance    = instance.newid WHERE tmp.instance    > 0");
     CharacterDatabase.DirectExecute("UPDATE group_instance          AS tmp LEFT JOIN instance ON tmp.instance    = instance.id SET tmp.instance    = instance.newid WHERE tmp.instance    > 0");

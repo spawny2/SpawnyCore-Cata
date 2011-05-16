@@ -223,7 +223,7 @@ void World::AddSession(WorldSession* s)
 }
 
 void
-World::AddSession_ (WorldSession* s)
+World::AddSession_(WorldSession* s)
 {
     ASSERT (s);
 
@@ -275,20 +275,11 @@ World::AddSession_ (WorldSession* s)
         return;
     }
 
-    WorldPacket packet(SMSG_AUTH_RESPONSE, 1 + 4 + 1 + 4 + 1 + 1);
-    packet << uint8(AUTH_OK);
-    packet << uint32(0);                                   // BillingTimeRemaining
-    packet << uint8(0);                                    // BillingPlanFlags
-    packet << uint32(0);                                   // BillingTimeRested
-    packet << uint8(s->Expansion());                       // payed expansion
-    packet << uint8(s->Expansion());                       // server expansion
-    s->SendPacket(&packet);
+    s->SendAuthResponse(AUTH_OK, true);
 
     s->SendAddonsInfo();
 
-    WorldPacket pkt(SMSG_CLIENTCACHE_VERSION, 4);
-    pkt << uint32(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
-    s->SendPacket(&pkt);
+    s->SendClientCacheVersion(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
 
     s->SendTutorialsData();
 
@@ -343,15 +334,7 @@ void World::AddQueuedPlayer(WorldSession* sess)
     m_QueuedPlayer.push_back(sess);
 
     // The 1st SMSG_AUTH_RESPONSE needs to contain other info too.
-    WorldPacket packet(SMSG_AUTH_RESPONSE, 1+4+1+4+1+4+1);
-    packet << uint8(AUTH_WAIT_QUEUE);
-    packet << uint32(0);                                    // BillingTimeRemaining
-    packet << uint8(0);                                     // BillingPlanFlags
-    packet << uint32(0);                                    // BillingTimeRested
-    packet << uint8(sess->Expansion());                     // 0 - normal, 1 - TBC, 2 - WOTLK, must be set in database manually for each account
-    packet << uint32(GetQueuePos(sess));                    // Queue position
-    packet << uint8(0);                                     // Unk 3.3.0
-    sess->SendPacket(&packet);
+    sess->SendAuthResponse(AUTH_WAIT_QUEUE, false, GetQueuePos(sess));
 }
 
 bool World::RemoveQueuedPlayer(WorldSession* sess)
@@ -392,11 +375,7 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
         pop_sess->ResetTimeOutTime();
         pop_sess->SendAuthWaitQue(0);
         pop_sess->SendAddonsInfo();
-
-        WorldPacket pkt(SMSG_CLIENTCACHE_VERSION, 4);
-        pkt << uint32(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
-        pop_sess->SendPacket(&pkt);
-
+        pop_sess->SendClientCacheVersion(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
         pop_sess->SendAccountDataTimes(GLOBAL_CACHE_MASK);
         pop_sess->SendTutorialsData();
 
@@ -1451,7 +1430,7 @@ void World::SetInitialWorldSettings()
     sGameEventMgr->LoadFromDB();
 
     sLog->outString("Loading Dungeon boss data...");
-    sLFGMgr->LoadDungeonEncounters();
+    sObjectMgr->LoadInstanceEncounters();
 
     sLog->outString("Loading LFG rewards...");
     sLFGMgr->LoadRewards();
@@ -1569,9 +1548,6 @@ void World::SetInitialWorldSettings()
     sLog->outString("Loading GameTeleports...");
     sObjectMgr->LoadGameTele();
 
-    sLog->outString("Loading Npc Text Id...");
-    sObjectMgr->LoadNpcTextId();                                 // must be after load Creature and NpcText
-
     sObjectMgr->LoadGossipScripts();                             // must be before gossip menu options
 
     sLog->outString("Loading Gossip menu...");
@@ -1662,7 +1638,7 @@ void World::SetInitialWorldSettings()
     sSmartScriptMgr->LoadSmartAIFromDB();
 
     ///- Initialize game time and timers
-    sLog->outDebug("DEBUG:: Initialize game time and timers");
+    sLog->outString("Initialize game time and timers");
     m_gameTime = time(NULL);
     m_startTime=m_gameTime;
 
@@ -1699,7 +1675,7 @@ void World::SetInitialWorldSettings()
     mail_timer = ((((localtime(&m_gameTime)->tm_hour + 20) % 24)* HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
                                                             //1440
     mail_timer_expires = ((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
-    sLog->outDebug("Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
+    sLog->outDetail("Mail timer set to: " UI64FMTD ", mail return is called every " UI64FMTD " minutes", uint64(mail_timer), uint64(mail_timer_expires));
 
     ///- Initilize static helper structures
     AIRegistry::Initialize();
@@ -2573,7 +2549,7 @@ void World::ProcessCliCommands()
     CliCommandHolder* command;
     while (cliCmdQueue.next(command))
     {
-        sLog->outDebug("CLI command under processing...");
+        sLog->outDetail("CLI command under processing...");
         zprint = command->m_print;
         callbackArg = command->m_callbackArg;
         CliHandler handler(callbackArg, zprint);
@@ -2614,9 +2590,9 @@ void World::SendAutoBroadcast()
         WorldPacket data(SMSG_NOTIFICATION, (msg.size()+1));
         data << msg;
         sWorld->SendGlobalMessage(&data);
-
     }
-    sLog->outDebug("AutoBroadcast: '%s'",msg.c_str());
+
+    sLog->outDetail("AutoBroadcast: '%s'",msg.c_str());
 }
 
 void World::UpdateRealmCharCount(uint32 accountId)
