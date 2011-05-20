@@ -3762,7 +3762,6 @@ void Spell::finish(bool ok)
     if (m_spellInfo->Attributes & SPELL_ATTR0_STOP_ATTACK_TARGET)
         m_caster->AttackStop();
 
-<<<<<<< HEAD
     if(m_spellInfo->Id == 30455) // Ice Lance
     {
         if(m_caster->HasAura(44544)) // Fingers of Frost
@@ -3784,7 +3783,6 @@ void Spell::finish(bool ok)
             m_caster->RemoveAura(88688);
         }
     }
->>>>>>> upstream/master
 }
 
 void Spell::SendCastResult(SpellCastResult result)
