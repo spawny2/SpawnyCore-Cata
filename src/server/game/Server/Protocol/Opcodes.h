@@ -632,7 +632,7 @@ enum Opcodes
     MSG_LIST_STABLED_PETS                            = 0x06EAC, // 4.0.6a 13623
     SMSG_STABLE_RESULT                               = 0x0EACC, // 4.0.6a 13623
     CMSG_STABLE_REVIVE_PET                           = 0x100C7, //
-    CMSG_STABLE_CHANGE_SLOT                          = 0x00237, //
+    CMSG_STABLE_CHANGE_SLOT                          = 0x00291, // 4.0.6a 13623
     MSG_QUEST_PUSH_RESULT                            = 0x022A4, // 4.0.6a 13623
     SMSG_PLAY_MUSIC                                  = 0x0AE54, // 4.0.6a 13623
     SMSG_PLAY_OBJECT_SOUND                           = 0x07DA0, // 4.0.6a 13623
@@ -1169,7 +1169,7 @@ enum Opcodes
     SMSG_THREAT_UPDATE                               = 0x0B480, // 4.0.6a 13623
     SMSG_THREAT_REMOVE                               = 0x029E0, // 4.0.6a 13623
     SMSG_THREAT_CLEAR                                = 0x0FFC8, // 4.0.6a 13623
-    SMSG_CONVERT_RUNE                                = 0x101E8, //
+    SMSG_CONVERT_RUNE                                = 0x0B4AC, // 4.0.6a 13623
     SMSG_RESYNC_RUNES                                = 0x101E9, //
     SMSG_ADD_RUNE_POWER                              = 0x101EA, //
     CMSG_START_QUEST                                 = 0x00613, // 4.0.6a 13623

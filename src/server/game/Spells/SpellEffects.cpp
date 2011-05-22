@@ -487,39 +487,44 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
             }
             case SPELLFAMILY_WARRIOR:
             {
-                // Bloodthirst
-                if (m_spellInfo->SpellFamilyFlags[1] & 0x400)
-                    damage = uint32(damage * (m_caster->GetTotalAttackPowerValue(BASE_ATTACK)) / 100);
-                // Victory Rush
-                else if (m_spellInfo->SpellFamilyFlags[1] & 0x100)
-                {
-                    damage = uint32(damage * m_caster->GetTotalAttackPowerValue(BASE_ATTACK) / 100);
-                    m_caster->ModifyAuraState(AURA_STATE_WARRIOR_VICTORY_RUSH, false);
-                }
+               // Bloodthirst
+               if (m_spellInfo->SpellFamilyFlags[1] & 0x400)
+                   damage = uint32(damage * (m_caster->GetTotalAttackPowerValue(BASE_ATTACK)) / 100);
+               // Victory Rush
+               else if (m_spellInfo->SpellFamilyFlags[1] & 0x100)
+               {
+                damage = uint32(damage * m_caster->GetTotalAttackPowerValue(BASE_ATTACK) / 100);
+                m_caster->ModifyAuraState(AURA_STATE_WARRIOR_VICTORY_RUSH, false);
+               }
                // Cleave
                else if (m_spellInfo->Id == 845)
-                {
+               {
                damage = uint32(6+ m_caster->GetTotalAttackPowerValue(BASE_ATTACK)* 0.45);
-                }
+               }
+               // Intercept
+                 else if (m_spellInfo->Id == 20253)
+                 {
+                 damage = uint32(1 + m_caster->GetTotalAttackPowerValue(BASE_ATTACK) * 0.12);
+                 }
                // Execute
                else if (m_spellInfo->Id ==5308)
-                {
+               {
                damage = uint32 (10 + m_caster->GetTotalAttackPowerValue(BASE_ATTACK)* 0.437*100/100);  
-                }
-                // Heroic Strike
-                else if (m_spellInfo->Id == 78)
-                {
-                    damage = uint32(8 + m_caster->GetTotalAttackPowerValue(BASE_ATTACK)* 60 / 100);
-                }
-                // Shockwave
-                else if (m_spellInfo->Id == 46968)
-                {
-                    int32 pct = m_caster->CalculateSpellDamage(unitTarget, m_spellInfo, 2);
-                    if (pct > 0)
-                        damage+= int32(m_caster->GetTotalAttackPowerValue(BASE_ATTACK) * pct / 100);
+               }
+               // Heroic Strike
+               else if (m_spellInfo->Id == 78)
+               {
+                damage = uint32(8 + m_caster->GetTotalAttackPowerValue(BASE_ATTACK)* 60 / 100);
+               }
+               // Shockwave
+               else if (m_spellInfo->Id == 46968)
+               {
+                int32 pct = m_caster->CalculateSpellDamage(unitTarget, m_spellInfo, 2);
+                if (pct > 0)
+                    damage+= int32(m_caster->GetTotalAttackPowerValue(BASE_ATTACK) * pct / 100);
                     break;
-                }
-                break;
+               }
+               break;
             }
             case SPELLFAMILY_WARLOCK:
             {
@@ -589,7 +594,37 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                 break;
             }
             case SPELLFAMILY_PRIEST:
-            {
+            { 
+              //Evangelism and Dark Evangelism
+                if (m_caster->HasAura(81659)) // Rank 1
+                { 
+                    if (m_spellInfo->Id == 585)
+                    {
+                        m_caster->CastSpell(m_caster,81660,true);
+                    }
+                    
+                    else
+                    {
+                        if (m_spellInfo->Id == 15407)      // Dark Evangelism from Mind Flay                   
+                            m_caster->CastSpell(m_caster,87117,true);
+                    }
+                }
+                else
+                 
+                if (m_caster->HasAura(81662)) // Rank 2
+                {
+                    if (m_spellInfo->Id == 585)
+                    {
+                        m_caster->CastSpell(m_caster,81661,true);
+                    }
+                    
+                    else
+                    { 
+                        if (m_spellInfo->Id == 15407)      // Dark Evangelism from Mind Flay 
+                            m_caster->CastSpell(m_caster,87118,true);
+                    }     
+                }
+
                 // Shadow Word: Death - deals damage equal to damage done to caster
                 if ((m_spellInfo->SpellFamilyFlags[1] & 0x2))
                 {
@@ -1694,8 +1729,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
             // Death strike
             if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_DK_DEATH_STRIKE)
             {
-                uint32 count = unitTarget->GetDiseasesByCaster(m_caster->GetGUID());
-                int32 bp = int32(count * m_caster->CountPctFromMaxHealth(int32(m_spellInfo->EffectDamageMultiplier[0])));
+                int32 bp = int32(m_caster->CountPctFromMaxHealth(7));
                 // Improved Death Strike
                 if (AuraEffect const * aurEff = m_caster->GetAuraEffect(SPELL_AURA_ADD_PCT_MODIFIER, SPELLFAMILY_DEATHKNIGHT, 2751, 0))
                     bp = int32(bp * (m_caster->CalculateSpellDamage(m_caster, aurEff->GetSpellProto(), 2) + 100.0f) / 100.0f);
@@ -1707,12 +1741,12 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
             {
                 if (m_caster->IsFriendlyTo(unitTarget))
                 {
-                    int32 bp = int32(damage * 1.5f);
+                    int32 bp = (985 + damage) * 3.5;
                     m_caster->CastCustomSpell(unitTarget, 47633, &bp, NULL, NULL, true);
                 }
                 else
                 {
-                    int32 bp = damage;
+                    int32 bp = 985 + damage;
                     m_caster->CastCustomSpell(unitTarget, 47632, &bp, NULL, NULL, true);
                 }
                 return;
