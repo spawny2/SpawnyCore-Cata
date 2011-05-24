@@ -351,6 +351,8 @@ void AddSC_thousand_needles();
 void AddSC_thunder_bluff();
 void AddSC_ungoro_crater();
 void AddSC_winterspring();
+//void AddSC_lost_city_of_the_tolvir();        //Cata:The Lost City of the Tol'vir
+void AddSC_instance_lost_city_of_the_tolvir();
 
 //northrend
 void AddSC_boss_slad_ran();
@@ -577,6 +579,7 @@ void AddSC_zangarmarsh();
 
 void AddSC_the_stonecore();					 //Cata:TheStonecore
 void AddSC_instance_the_stonecore();
+
 
 // battlegrounds
 
@@ -953,6 +956,8 @@ void AddKalimdorScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
+	//AddSC_lost_city_of_the_tolvir();
+	AddSC_instance_lost_city_of_the_tolvir();
 #endif
 }
 
@@ -1184,8 +1189,8 @@ void AddNorthrendScripts()
     AddSC_isle_of_conquest();
 
     // Cataclysm Scripts
-    AddSC_instance_the_stonecore();			//Cata: The Stonecore
     AddSC_the_stonecore();
+    AddSC_instance_the_stonecore();
 
 #endif
 }

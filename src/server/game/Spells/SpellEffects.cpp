@@ -482,6 +482,13 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                             damage *= pow(1.0f - distance / radius, 2);
                         break; 
                     }
+                    // Rocket Barrage, Goblin racial spell
+                    case 69041:
+                    {
+                        damage = uint32(1 + (0.25f * m_caster->GetTotalAttackPowerValue(BASE_ATTACK)) +
+                            (0.429f * m_caster->SpellBaseDamageBonus(SPELL_SCHOOL_MASK_FIRE)) +
+                            (m_caster->getLevel() * 2) + (m_caster->GetStat(STAT_INTELLECT) * 0.50193f));
+                    }
                 }
                 break;
             }
@@ -747,7 +754,14 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                 break;
             }
             case SPELLFAMILY_HUNTER:
-            {
+            {   // Rapid Recuperation
+                if (m_caster->HasAura(3045))      			   
+                      if (m_caster->HasAura(53228)) 			   // Rank 1
+                          m_caster->CastSpell(m_caster,53230,true);
+                    else
+                      if (m_caster->HasAura(53232)) 			   // Rank 2
+                          m_caster->CastSpell(m_caster,54227,true);
+
                 //Gore
                 if (m_spellInfo->SpellIconID == 1578)
                 {
@@ -776,7 +790,22 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                 break;
             }
             case SPELLFAMILY_DEATHKNIGHT:
-            {
+            {   
+                // Ebon Plaguebringer 
+                  if(m_caster->HasAura(51099)) // Rank 1
+                  {
+                     if(m_spellInfo->Id == 45462 || m_spellInfo->Id == 45477 || m_spellInfo->Id == 45524)
+                     m_caster->CastSpell(unitTarget,65142,true);
+                  }
+                  else
+                  if(m_caster->HasAura(51160)) // Rank 2
+                  {
+                     if(m_spellInfo->Id == 45462 || m_spellInfo->Id == 45477 || m_spellInfo->Id == 45524) 
+                     m_caster->CastSpell(unitTarget,65142,true);
+                  }
+                
+               else 
+
                 // Blood Boil - bonus for diseased targets
                 if (m_spellInfo->SpellFamilyFlags[0] & 0x00040000 && unitTarget->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_DEATHKNIGHT, 0, 0, 0x00000002, m_caster->GetGUID()))
                 {
