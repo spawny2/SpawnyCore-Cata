@@ -755,11 +755,11 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
             }
             case SPELLFAMILY_HUNTER:
             {   // Rapid Recuperation
-                if (m_caster->HasAura(3045))      			   
-                      if (m_caster->HasAura(53228)) 			   // Rank 1
+                if (m_caster->HasAura(3045))                     
+                      if (m_caster->HasAura(53228))                // Rank 1
                           m_caster->CastSpell(m_caster,53230,true);
                     else
-                      if (m_caster->HasAura(53232)) 			   // Rank 2
+                      if (m_caster->HasAura(53232))                // Rank 2
                           m_caster->CastSpell(m_caster,54227,true);
 
                 //Gore
@@ -773,7 +773,7 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
             case SPELLFAMILY_PALADIN:
             {
                 // Hammer of the Righteous
-                if (m_spellInfo->SpellFamilyFlags[1]&0x00040000)
+                if (m_spellInfo->SpellFamilyFlags[1] & 0x00040000)
                 {
                     // Add main hand dps * effect[2] amount
                     float average = (m_caster->GetFloatValue(UNIT_FIELD_MINDAMAGE) + m_caster->GetFloatValue(UNIT_FIELD_MAXDAMAGE)) / 2;
@@ -781,27 +781,38 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                     damage += count * int32(average * IN_MILLISECONDS) / m_caster->GetAttackTime(BASE_ATTACK);
                     break;
                 }
-                /*// Shield of Righteousness
-                if (m_spellInfo->SpellFamilyFlags[EFFECT_1] & 0x100000)
+                
+                if (m_spellInfo->Id == 53600) //Shield of  Righteous
                 {
-                    damage += m_caster->GetShieldBlockValue() * SpellMgr::CalculateSpellEffectAmount(m_spellInfo, EFFECT_1) / 100;
-                    break;
-                }*/
-                break;
+                    switch(m_caster->GetPower(POWER_HOLY_POWER))
+                    {
+                        case 0:
+                            damage = int32(damage * 1.16f);
+                            break;
+                        case 1: 
+                            damage = int32((damage * 1.16f) * 3);
+                            break;
+                        case 2: 
+                            damage = int32((damage * 1.16f) * 6);
+                            break;
+                    }
+                }
+
+             break;
             }
             case SPELLFAMILY_DEATHKNIGHT:
             {   
                 // Ebon Plaguebringer 
                   if(m_caster->HasAura(51099)) // Rank 1
                   {
-                     if(m_spellInfo->Id == 45462 || m_spellInfo->Id == 45477 || m_spellInfo->Id == 45524)
-                     m_caster->CastSpell(unitTarget,65142,true);
+                      if(m_spellInfo->Id == 45462 || m_spellInfo->Id == 45477 || m_spellInfo->Id == 45524)
+                      m_caster->CastSpell(unitTarget,65142,true);
                   }
                   else
                   if(m_caster->HasAura(51160)) // Rank 2
                   {
-                     if(m_spellInfo->Id == 45462 || m_spellInfo->Id == 45477 || m_spellInfo->Id == 45524) 
-                     m_caster->CastSpell(unitTarget,65142,true);
+                      if(m_spellInfo->Id == 45462 || m_spellInfo->Id == 45477 || m_spellInfo->Id == 45524) 
+                      m_caster->CastSpell(unitTarget,65142,true);
                   }
                 
                else 
@@ -2234,7 +2245,7 @@ void Spell::EffectTeleportUnits(SpellEffIndex /*effIndex*/)
     uint8 uiMaxSafeLevel = 0;
     switch (m_spellInfo->Id)
     {
-        case 36563:		// Shadowstep
+        case 36563:        // Shadowstep
             if (Player * plr = unitTarget->ToPlayer())
             {
                 if (Unit * target = plr->GetSelectedUnit())
@@ -2644,6 +2655,25 @@ void Spell::SpellDamageHeal(SpellEffIndex effIndex)
         // Remove Grievious bite if fully healed
         if (unitTarget->HasAura(48920) && (unitTarget->GetHealth() + addhealth >= unitTarget->GetMaxHealth()))
             unitTarget->RemoveAura(48920);
+        if (m_spellInfo->Id == 85673) // Word of Glory
+		{
+            int32 dmg;
+            switch (m_caster->GetPower(POWER_HOLY_POWER))
+            {
+                case 1: 
+                    dmg = int32(addhealth + 1*(m_caster->SpellBaseHealingBonus(SPELL_SCHOOL_MASK_HOLY) * 0.85));
+                    addhealth = dmg;
+                    break;
+                case 2: 
+                    dmg = int32(addhealth + 2*(m_caster->SpellBaseHealingBonus(SPELL_SCHOOL_MASK_HOLY) * 0.85));
+                    addhealth = dmg;
+                    break;
+                case 3: 
+                    dmg = int32(addhealth + 3*(m_caster->SpellBaseHealingBonus(SPELL_SCHOOL_MASK_HOLY) * 0.85));
+                    addhealth = dmg;
+                    break;
+            }
+		}
 
         m_damage -= addhealth;
     }
@@ -4402,14 +4432,8 @@ void Spell::SpellDamageWeaponDmg(SpellEffIndex effIndex)
                     break;
                 }
                 (m_caster->HasAura(63220)) ? totalDamagePercentMod *= 1.15f : 0 ; // Glyphe of Templar's Verdict
-                m_caster->SetPower(POWER_HOLY_POWER, 0);
             }
-            // Word of Glory
-            if (m_spellInfo->Id == 85673)
-            {
-                m_caster->SetPower(POWER_HOLY_POWER, 0);
-            }
-            
+                      
             // Seal of Command Unleashed
             else if (m_spellInfo->Id == 20467)
             {

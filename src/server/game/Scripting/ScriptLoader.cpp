@@ -222,7 +222,7 @@ void AddSC_boss_nalorakk();
 void AddSC_boss_zuljin();
 void AddSC_instance_zulaman();
 void AddSC_zulaman();
-void AddSC_boss_jeklik();					//Zul'Gurub
+void AddSC_boss_jeklik();                    //Zul'Gurub
 void AddSC_boss_venoxis();
 void AddSC_boss_marli();
 void AddSC_boss_mandokir();
@@ -577,7 +577,7 @@ void AddSC_zangarmarsh();
 
 // Cataclysm Scripts
 
-void AddSC_the_stonecore();					 //Cata:TheStonecore
+void AddSC_the_stonecore();                     //Cata:TheStonecore
 void AddSC_instance_the_stonecore();
 
 
@@ -823,7 +823,7 @@ void AddEasternKingdomsScripts()
     AddSC_boss_zuljin();
     AddSC_instance_zulaman();
     AddSC_zulaman();
-	AddSC_boss_jeklik();					//Zul'Gurub
+    AddSC_boss_jeklik();                    //Zul'Gurub
     AddSC_boss_venoxis();
     AddSC_boss_marli();
     AddSC_boss_mandokir();
@@ -931,7 +931,7 @@ void AddKalimdorScripts()
     AddSC_instance_wailing_caverns();
     AddSC_zulfarrak();                      //Zul'Farrak generic
     AddSC_instance_zulfarrak();             //Zul'Farrak instance script
-	AddSC_npc_pusillin();                   //Dire maul npc Pusillin
+    AddSC_npc_pusillin();                   //Dire maul npc Pusillin
 
     AddSC_ashenvale();
     AddSC_azshara();
@@ -956,8 +956,8 @@ void AddKalimdorScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
-	//AddSC_lost_city_of_the_tolvir();
-	AddSC_instance_lost_city_of_the_tolvir();
+    //AddSC_lost_city_of_the_tolvir();
+    AddSC_instance_lost_city_of_the_tolvir();
 #endif
 }
 

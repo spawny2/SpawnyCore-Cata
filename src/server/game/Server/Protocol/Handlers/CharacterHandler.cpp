@@ -192,9 +192,9 @@ bool LoginQueryHolder::Initialize()
     stmt->setUInt32(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOADRANDOMBG, stmt);
 
-    stmt = CharacterDatabase.GetPreparedStatement(CHAR_LOAD_PLAYER_ARENASTATS);
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_LOAD_PLAYER_ARENAINFO);
     stmt->setUInt32(0, lowGuid);
-    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOADARENASTATS, stmt);
+    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOADARENAINFO, stmt);
 
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_LOAD_PLAYER_BANNED);
     stmt->setUInt32(0, lowGuid);
@@ -420,7 +420,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket & recv_data)
     }
 
     QueryResult petquery = CharacterDatabase.PQuery("SELECT id FROM character_pet WHERE id != 0 ORDER BY id DESC LIMIT 1");
-	QueryResult result = CharacterDatabase.PQuery("SELECT COUNT(guid) FROM characters WHERE account = '%d'", GetAccountId());
+    QueryResult result = CharacterDatabase.PQuery("SELECT COUNT(guid) FROM characters WHERE account = '%d'", GetAccountId());
     uint8 charcount = 0;
     if (result)
     {
@@ -881,13 +881,18 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder * holder)
         SendPacket(&data);
         sLog->outStaticDebug("WORLD: Sent motd (SMSG_MOTD)");
 
-        uint32 PlayersNum = sWorld->GetPlayerCount();
-        uint32 MaxPlayersNum = sWorld->GetMaxPlayerCount();
-        std::string uptime = secsToTimeString(sWorld->GetUptime());
-        
-        chH.PSendSysMessage(_FULLVERSION);
-        chH.PSendSysMessage(LANG_CONNECTED_PLAYERS, PlayersNum, MaxPlayersNum);
-        chH.PSendSysMessage(LANG_UPTIME, uptime.c_str());
+        if (sWorld->getIntConfig(CONFIG_ENABLE_SINFO_LOGIN) == 1)
+        {
+            uint32 PlayersNum = sWorld->GetPlayerCount();
+            uint32 MaxPlayersNum = sWorld->GetMaxPlayerCount();
+            std::string uptime = secsToTimeString(sWorld->GetUptime());
+            
+            chH.PSendSysMessage(_FULLVERSION);
+            chH.PSendSysMessage(LANG_CONNECTED_PLAYERS, PlayersNum, MaxPlayersNum);
+            chH.PSendSysMessage(LANG_UPTIME, uptime.c_str());
+            
+            sLog->outStaticDebug("WORLD: Sent server info");
+        }
     }
 
     //QueryResult *result = CharacterDatabase.PQuery("SELECT guildid,rank FROM guild_member WHERE guid = '%u'",pCurrChar->GetGUIDLow());

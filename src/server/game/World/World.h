@@ -300,6 +300,7 @@ enum WorldIntConfigs
     CONFIG_MIN_LOG_UPDATE,
     CONFIG_PLAYER_ALLOW_COMMANDS,
     CONFIG_NUMTHREADS,
+    CONFIG_ENABLE_SINFO_LOGIN,
     CONFIG_LOGDB_CLEARINTERVAL,
     CONFIG_LOGDB_CLEARTIME,
     CONFIG_CLIENTCACHE_VERSION,
@@ -842,7 +843,7 @@ class World
 
     private:
         void ProcessQueryCallbacks();
-        QueryCallback<uint32> m_realmCharCallback;
+        QueryCallback<QueryResult, uint32> m_realmCharCallback;
 };
 
 extern uint32 realmID;
