@@ -5725,14 +5725,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, AuraEffect* trigger
             {
                 // Glyph of Polymorph
                 case 56375:
+                {
                     target->RemoveAurasByType(SPELL_AURA_PERIODIC_DAMAGE, 0, target->GetAura(32409)); // SW:D shall not be removed.
                     target->RemoveAurasByType(SPELL_AURA_PERIODIC_DAMAGE_PERCENT);
                     target->RemoveAurasByType(SPELL_AURA_PERIODIC_LEECH);
                     return true;
+                }
                 // Glyph of Icy Veins
                 case 56374:
                 {
-                    RemoveAurasByType(SPELL_AURA_MOD_MELEE_HASTE, 0, 0, true, false);
+                    RemoveAurasByType(SPELL_AURA_HASTE_SPELLS, 0, 0, true, false);
                     RemoveAurasByType(SPELL_AURA_MOD_DECREASE_SPEED);
                     return true;
                 }
@@ -7444,19 +7446,11 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, AuraEffect* trigger
             {
                 basepoints0 = triggerAmount * damage / 100;
                 // Glyph of Unholy Blight
-                if (AuraEffect *glyph=GetAuraEffect(63332,0))
-                    basepoints0 += basepoints0 * glyph->GetAmount() / 100;
-                // Find replaced aura to use it's remaining amount
-                AuraEffectList const& DoTAuras = target->GetAuraEffectsByType(SPELL_AURA_PERIODIC_DAMAGE);
-                for (Unit::AuraEffectList::const_iterator i = DoTAuras.begin(); i != DoTAuras.end(); ++i)
-                {
-                     if ((*i)->GetCasterGUID() != GetGUID() || (*i)->GetId() != 50536)
-                         continue;
-                     basepoints0 += (*i)->GetAmount() * ((*i)->GetTotalTicks() - ((*i)->GetTickNumber()));
-                     break;
-                }
+                if (AuraEffect *glyph=GetAuraEffect(63332, 0))
+                    AddPctN(basepoints0, glyph->GetAmount());
 
                 triggered_spell_id = 50536;
+                basepoints0 += pVictim->GetRemainingDotDamage(GetGUID(), triggered_spell_id, SPELL_AURA_PERIODIC_DAMAGE);
                 break;
             }
             // Vendetta
@@ -16586,9 +16580,22 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form)
                 return 20857;
             return 20872;
         case FORM_FLIGHT_EPIC:
-            if (Player::TeamForRace(getRace()) == ALLIANCE)
+            if (getRace() == RACE_NIGHTELF)
+            {
                 return 21243;
-            return 21244;
+            }
+            else if (getRace() == RACE_TAUREN)
+            {
+                return 21244;
+            }
+            else if (getRace() == RACE_WORGEN)
+            {
+                return 37729;
+            }
+            else if (getRace() == RACE_TROLL)
+            {
+                return 37730;
+            }
         default:
         {
             uint32 modelid = 0;
