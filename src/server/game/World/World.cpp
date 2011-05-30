@@ -1138,6 +1138,8 @@ void World::LoadConfigSettings(bool reload)
     m_int_configs[CONFIG_CHARDELETE_MIN_LEVEL] = sConfig->GetIntDefault("CharDelete.MinLevel", 0);
     m_int_configs[CONFIG_CHARDELETE_KEEP_DAYS] = sConfig->GetIntDefault("CharDelete.KeepDays", 30);
 
+    m_int_configs[CONFIG_IGNORING_MAPS_VERSION] = sConfig->GetIntDefault("IgnoringMapsVersion", 0);
+    
     ///- Read the "Data" directory from the config file
     std::string dataPath = sConfig->GetStringDefault("DataDir","./");
     if (dataPath.at(dataPath.length()-1) != '/' && dataPath.at(dataPath.length()-1) != '\\')
@@ -1236,18 +1238,22 @@ void World::SetInitialWorldSettings()
     ///- Init highest guids before any table loading to prevent using not initialized guids in some code.
     sObjectMgr->SetHighestGuids();
 
-    ///- Check the existence of the map files for all races' startup areas.
-    if (!MapManager::ExistMapAndVMap(0,-6240.32f, 331.033f)
-        || !MapManager::ExistMapAndVMap(0,-8949.95f,-132.493f)
-        || !MapManager::ExistMapAndVMap(1,-618.518f,-4251.67f)
-        || !MapManager::ExistMapAndVMap(0, 1676.35f, 1677.45f)
-        || !MapManager::ExistMapAndVMap(1, 10311.3f, 832.463f)
-        || !MapManager::ExistMapAndVMap(1,-2917.58f,-257.98f)
-        || (m_int_configs[CONFIG_EXPANSION] && (
-            !MapManager::ExistMapAndVMap(530,10349.6f,-6357.29f) ||
-            !MapManager::ExistMapAndVMap(530,-3961.64f,-13931.2f))))
+    if(sWorld->getIntConfig(CONFIG_IGNORING_MAPS_VERSION) == 0)
     {
-        exit(1);
+        ///- Check the existence of the map files for all races' startup areas.
+        if (!MapManager::ExistMapAndVMap(0,-6240.32f, 331.033f)
+            || !MapManager::ExistMapAndVMap(0,-8949.95f,-132.493f)
+            || !MapManager::ExistMapAndVMap(1,-618.518f,-4251.67f)
+            || !MapManager::ExistMapAndVMap(0, 1676.35f, 1677.45f)
+            || !MapManager::ExistMapAndVMap(1, 10311.3f, 832.463f)
+            || !MapManager::ExistMapAndVMap(1,-2917.58f,-257.98f)
+            || (m_int_configs[CONFIG_EXPANSION] && (
+                !MapManager::ExistMapAndVMap(530,10349.6f,-6357.29f) ||
+                !MapManager::ExistMapAndVMap(530,-3961.64f,-13931.2f) ||
+                !MapManager::ExistMapAndVMap(648, -8423.809570f, 1361.300049f))))
+        {
+            exit(1);
+        }    
     }
 
     ///- Loading strings. Getting no records means core load has to be canceled because no error message can be output.
@@ -1269,7 +1275,9 @@ void World::SetInitialWorldSettings()
     LoginDatabase.PExecute("UPDATE realmlist SET icon = %u, timezone = %u WHERE id = '%d'", server_type, realm_zone, realmID);
 
     ///- Remove the bones (they should not exist in DB though) and old corpses after a restart
-    CharacterDatabase.PExecute("DELETE FROM corpse WHERE corpse_type = '0' OR time < (UNIX_TIMESTAMP()-'%u')", 3 * DAY);
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_OLD_CORPSES);
+    stmt->setUInt32(0, 3 * DAY);
+    CharacterDatabase.Execute(stmt);
 
     ///- Load the DBC files
     sLog->outString("Initialize data stores...");
@@ -1289,9 +1297,9 @@ void World::SetInitialWorldSettings()
     sLog->outString("Loading SkillLineAbilityMultiMap Data...");
     sSpellMgr->LoadSkillLineAbilityMap();
 
-    ///- Clean up and pack instances
-    sLog->outString("Cleaning up and packing instances...");
-    sInstanceSaveMgr->CleanupAndPackInstances();                // must be called before `creature_respawn`/`gameobject_respawn` tables
+     // Must be called before `creature_respawn`/`gameobject_respawn` tables
+    sLog->outString("Loading instances...");
+    sInstanceSaveMgr->LoadInstances();
 
     sLog->outString("Loading Localization strings...");
     uint32 oldMSTime = getMSTime();
@@ -1316,6 +1324,9 @@ void World::SetInitialWorldSettings()
 
     sLog->outString("Loading Spell Required Data...");
     sSpellMgr->LoadSpellRequired();
+
+    sLog->outString("Loading Spell Rank Data...");
+    sSpellMgr->LoadSpellRanks();
 
     sLog->outString("Loading Spell Group types...");
     sSpellMgr->LoadSpellGroups();

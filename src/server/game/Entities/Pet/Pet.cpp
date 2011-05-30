@@ -356,6 +356,8 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
 
 void Pet::SavePetToDB(PetSlot mode)
 {
+    sLog->outDebug("Pet::SavePetToDB PetSlot [%i]", int32(mode));
+
     if (!GetEntry())
         return;
 
@@ -370,7 +372,7 @@ void Pet::SavePetToDB(PetSlot mode)
     Player* pOwner = (Player*)GetOwner();
     if (!pOwner)
         return;
-
+   
     if(mode == PET_SLOT_ACTUAL_PET_SLOT)
         mode = pOwner->m_currentPetSlot;
     if(mode >= PET_SLOT_HUNTER_FIRST && mode <= PET_SLOT_HUNTER_LAST && getPetType() != HUNTER_PET)
@@ -379,8 +381,7 @@ void Pet::SavePetToDB(PetSlot mode)
         assert(false);
     
     // not save pet as current if another pet temporary unsummoned
-    if (mode == pOwner->m_currentPetSlot && pOwner->GetTemporaryUnsummonedPetNumber() &&
-        pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
+    if (mode == pOwner->m_currentPetSlot && pOwner->GetTemporaryUnsummonedPetNumber() && pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
     {
         // pet will lost anyway at restore temporary unsummoned
         if (getPetType() == HUNTER_PET)
@@ -398,7 +399,7 @@ void Pet::SavePetToDB(PetSlot mode)
     _SaveAuras(trans);
 
     // stable and not in slot saves
-    if (mode > PET_SLOT_HUNTER_LAST)
+    if (mode > PET_SLOT_HUNTER_LAST && getPetType() == HUNTER_PET)
         RemoveAllAuras();
 
     _SaveSpells(trans);
@@ -413,7 +414,7 @@ void Pet::SavePetToDB(PetSlot mode)
         CharacterDatabase.escape_string(name);
         SQLTransaction trans = CharacterDatabase.BeginTransaction();
         // remove current data
-        trans->PAppend("DELETE FROM character_pet WHERE owner = '%u' AND id = '%u'", owner,m_charmInfo->GetPetNumber());
+        trans->PAppend("DELETE FROM character_pet WHERE owner = '%u' AND id = '%u'", owner, m_charmInfo->GetPetNumber());
         
         // save pet
         std::ostringstream ss;
@@ -836,6 +837,7 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
     {
         if ((m_owner->getClass() == CLASS_WARLOCK)
             || (m_owner->getClass() == CLASS_SHAMAN)        // Fire Elemental
+            || (m_owner->getClass() == CLASS_PRIEST)        // Shadowfiend
             || (m_owner->getClass() == CLASS_DEATH_KNIGHT)) // Risen Ghoul
             petType = SUMMON_PET;
         else if (m_owner->getClass() == CLASS_HUNTER)

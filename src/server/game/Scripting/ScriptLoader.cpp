@@ -351,7 +351,7 @@ void AddSC_thousand_needles();
 void AddSC_thunder_bluff();
 void AddSC_ungoro_crater();
 void AddSC_winterspring();
-//void AddSC_lost_city_of_the_tolvir();        //Cata:The Lost City of the Tol'vir
+void AddSC_lost_city_of_the_tolvir();        //Cata:The Lost City of the Tol'vir
 void AddSC_instance_lost_city_of_the_tolvir();
 
 //northrend
@@ -478,8 +478,11 @@ void AddSC_boss_festergut();
 void AddSC_boss_rotface();
 void AddSC_boss_professor_putricide();
 void AddSC_boss_blood_prince_council();
+void AddSC_boss_blood_queen_lana_thel();
+void AddSC_boss_sindragosa();
 void AddSC_icecrown_citadel_teleport();
 void AddSC_instance_icecrown_citadel();
+void AddSC_icecrown_citadel();
 
 void AddSC_dalaran();
 void AddSC_borean_tundra();
@@ -956,7 +959,7 @@ void AddKalimdorScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
-    //AddSC_lost_city_of_the_tolvir();
+    AddSC_lost_city_of_the_tolvir();
     AddSC_instance_lost_city_of_the_tolvir();
 #endif
 }
@@ -1173,8 +1176,11 @@ void AddNorthrendScripts()
     AddSC_boss_rotface();
     AddSC_boss_professor_putricide();
     AddSC_boss_blood_prince_council();
+    AddSC_boss_blood_queen_lana_thel();
+    AddSC_boss_sindragosa();
     AddSC_icecrown_citadel_teleport();
     AddSC_instance_icecrown_citadel();
+    AddSC_icecrown_citadel();
 
     AddSC_dalaran();
     AddSC_borean_tundra();

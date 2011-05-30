@@ -818,10 +818,13 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                else 
 
                 // Blood Boil - bonus for diseased targets
-                if (m_spellInfo->SpellFamilyFlags[0] & 0x00040000 && unitTarget->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_DEATHKNIGHT, 0, 0, 0x00000002, m_caster->GetGUID()))
+                if (m_spellInfo->SpellFamilyFlags[0] & 0x00040000)
                 {
-                    damage += m_damage / 2;
-                    damage += int32(m_caster->GetTotalAttackPowerValue(RANGED_ATTACK)* 0.035f);
+                    if (unitTarget->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_DEATHKNIGHT, 0, 0, 0x00000002, m_caster->GetGUID()))
+                    {
+                        damage += m_damage / 2;
+                        damage += int32(m_caster->GetTotalAttackPowerValue(BASE_ATTACK) * 0.035f);
+                    }
                 }
                 break;
             }
@@ -1793,6 +1796,14 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
             }
             switch (m_spellInfo->Id)
             {
+            case 49020: //Obliterate
+            case 66198: //Obliterate Off-Hand
+                {
+                    uint32 count = unitTarget->GetDiseasesByCaster(m_caster->GetGUID());
+                    if (count > 0)
+                       damage = int32(damage + (damage * count * 12.5 / 100));
+                    break;
+                }
             case 49560: // Death Grip
                 Position pos;
                 GetSummonPosition(effIndex, pos);
@@ -2659,7 +2670,7 @@ void Spell::SpellDamageHeal(SpellEffIndex effIndex)
         if (unitTarget->HasAura(48920) && (unitTarget->GetHealth() + addhealth >= unitTarget->GetMaxHealth()))
             unitTarget->RemoveAura(48920);
         if (m_spellInfo->Id == 85673) // Word of Glory
-		{
+        {
             int32 dmg;
             switch (m_caster->GetPower(POWER_HOLY_POWER))
             {
@@ -2676,7 +2687,7 @@ void Spell::SpellDamageHeal(SpellEffIndex effIndex)
                     addhealth = dmg;
                     break;
             }
-		}
+        }
 
         m_damage -= addhealth;
     }
@@ -4109,6 +4120,13 @@ void Spell::EffectTameCreature(SpellEffIndex /*effIndex*/)
     if (m_caster->getClass() != CLASS_HUNTER)
         return;
 
+    // If we have a full list we shoulden't be able to create a new one.
+    if (m_caster->ToPlayer()->getSlotForNewPet() == PET_SLOT_FULL_LIST)
+    {
+        // Need to get the right faluire numbers or maby a custom message to the screen ?
+        return;
+    }
+
     // cast finish successfully
     //SendChannelUpdate(0);
     finish();
@@ -4139,7 +4157,8 @@ void Spell::EffectTameCreature(SpellEffIndex /*effIndex*/)
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
     {
         //slot is defined by SetMinion.
-        pet->SavePetToDB(PET_SLOT_ACTUAL_PET_SLOT);
+        m_caster->ToPlayer()->getSlotForNewPet();
+        pet->SavePetToDB(m_caster->ToPlayer()->m_currentPetSlot);
         m_caster->ToPlayer()->PetSpellInitialize();
     }
 }
@@ -5747,6 +5766,28 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                     DoCreateItem(effIndex, itemId[urand(0,4)]);
                     return;
             }
+            break;
+        }
+        case SPELLFAMILY_WARLOCK:
+        {
+            if (m_spellInfo->Id == 77801) // Demon Soul
+            {
+                if (m_caster)
+                {
+                    if (!unitTarget || !unitTarget->isAlive())
+                        return;
+                    if (unitTarget->GetEntry() == 416)            // Summoned Imp
+                        m_caster->CastSpell(m_caster,79459,true);
+                    if (unitTarget->GetEntry() == 1860)           // Summoned Voidwalker
+                        m_caster->CastSpell(m_caster,79464,true);
+                    if (unitTarget->GetEntry() == 417)            // Summoned Felhunter
+                        m_caster->CastSpell(m_caster,79460,true);
+                    if (unitTarget->GetEntry() == 1863)           // Summoned Succubus
+                        m_caster->CastSpell(m_caster,79463,true);
+                    if (unitTarget->GetEntry() == 17252)          // Summoned Felguard
+                        m_caster->CastSpell(m_caster,79462,true);
+                }	 
+            }	
             break;
         }
         case SPELLFAMILY_PALADIN:

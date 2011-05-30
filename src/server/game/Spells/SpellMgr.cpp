@@ -3460,6 +3460,116 @@ void SpellMgr::LoadSpellRequired()
     sLog->outString();
 }
 
+void SpellMgr::LoadSpellRanks()
+{
+    uint32 oldMSTime = getMSTime();
+
+    mSpellChains.clear();                                   // need for reload case
+
+    QueryResult result = WorldDatabase.Query("SELECT first_spell_id, spell_id, rank from spell_ranks ORDER BY first_spell_id , rank");
+
+    if (!result)
+    {
+        sLog->outString(">> Loaded 0 spell rank records");
+        sLog->outString();
+        sLog->outErrorDb("`spell_ranks` table is empty!");
+        return;
+    }
+
+    uint32 rows = 0;
+    bool finished = false;
+
+    do
+    {
+        // spellid, rank
+        std::list < std::pair < int32, int32 > > rankChain;
+        int32 currentSpell = -1;
+        int32 lastSpell = -1;
+
+        // fill one chain
+        while (currentSpell == lastSpell && !finished)
+        {
+            Field *fields = result->Fetch();
+
+            currentSpell = fields[0].GetUInt32();
+            if (lastSpell == -1)
+                lastSpell = currentSpell;
+            uint32 spell_id = fields[1].GetUInt32();
+            uint32 rank = fields[2].GetUInt32();
+
+            // don't drop the row if we're moving to the next rank
+            if (currentSpell == lastSpell)
+            {
+                rankChain.push_back(std::make_pair(spell_id, rank));
+                if (!result->NextRow())
+                    finished = true;
+            }
+            else
+                break;
+        }
+        // check if chain is made with valid first spell
+        SpellEntry const * first = sSpellStore.LookupEntry(lastSpell);
+        if (!first)
+        {
+            sLog->outErrorDb("Spell rank identifier(first_spell_id) %u listed in `spell_ranks` does not exist!", lastSpell);
+            continue;
+        }
+        // check if chain is long enough
+        if (rankChain.size() < 2)
+        {
+            sLog->outErrorDb("There is only 1 spell rank for identifier(first_spell_id) %u in `spell_ranks`, entry is not needed!", lastSpell);
+            continue;
+        }
+        int32 curRank = 0;
+        bool valid = true;
+        // check spells in chain
+        for (std::list<std::pair<int32, int32> >::iterator itr = rankChain.begin() ; itr!= rankChain.end(); ++itr)
+        {
+            SpellEntry const * spell = sSpellStore.LookupEntry(itr->first);
+            if (!spell)
+            {
+                sLog->outErrorDb("Spell %u (rank %u) listed in `spell_ranks` for chain %u does not exist!", itr->first, itr->second, lastSpell);
+                valid = false;
+                break;
+            }
+            ++curRank;
+            if (itr->second != curRank)
+            {
+                sLog->outErrorDb("Spell %u (rank %u) listed in `spell_ranks` for chain %u does not have proper rank value(should be %u)!", itr->first, itr->second, lastSpell, curRank);
+                valid = false;
+                break;
+            }
+        }
+        if (!valid)
+            continue;
+        int32 prevRank = 0;
+        // insert the chain
+        std::list<std::pair<int32, int32> >::iterator itr = rankChain.begin();
+        do
+        {
+            ++rows;
+            int32 addedSpell = itr->first;
+            mSpellChains[addedSpell].first = lastSpell;
+            mSpellChains[addedSpell].last = rankChain.back().first;
+            mSpellChains[addedSpell].rank = itr->second;
+            mSpellChains[addedSpell].prev = prevRank;
+            prevRank = addedSpell;
+            ++itr;
+            if (itr == rankChain.end())
+            {
+                mSpellChains[addedSpell].next = 0;
+                break;
+            }
+            else
+                mSpellChains[addedSpell].next = itr->first;
+        }
+        while (true);
+    } while (!finished);
+
+    sLog->outString(">> Loaded %u spell rank records in %u ms", rows, GetMSTimeDiffToNow(oldMSTime));
+    sLog->outString();
+}
+
 void SpellMgr::LoadSpellCustomAttr()
 {
     uint32 oldMSTime = getMSTime();
@@ -3609,7 +3719,7 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->AuraInterruptFlags = AURA_INTERRUPT_FLAG_TAKE_DAMAGE;
             count++;
             break;
-	    case 85673: // World of Glory
+        case 85673: // World of Glory
             spellInfo->Effect[1] = 0;
             count++;
             break;
@@ -3706,6 +3816,7 @@ void SpellMgr::LoadSpellCustomAttr()
         case 26029: // dark glare
         case 37433: // spout
         case 43140: case 43215: // flame breath
+        case 70461: // Coldflame Trap
             mSpellCustomAttr[i] |= SPELL_ATTR0_CU_CONE_LINE;
             count++;
             break;
@@ -3739,6 +3850,8 @@ void SpellMgr::LoadSpellCustomAttr()
         case 69782: case 69796:                 // Ooze Flood
         case 69798: case 69801:                 // Ooze Flood
         case 69538: case 69553: case 69610:     // Ooze Combine
+        case 71447: case 71481:                 // Bloodbolt Splash
+        case 71482: case 71483:                 // Bloodbolt Splash
             mSpellCustomAttr[i] |= SPELL_ATTR0_CU_EXCLUDE_SELF;
             count++;
             break;
@@ -4060,6 +4173,10 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->EffectSpellClassMask[0] = flag96(0x00000040, 0x00000000, 0x00000000);
             count++;
             break;
+        case 70460: // Coldflame Jets (Traps after Saurfang)
+            spellInfo->DurationIndex = 1;   // 10 seconds
+            count++;
+            break;
         case 71413: // Green Ooze Summon
         case 71414: // Orange Ooze Summon
             spellInfo->EffectImplicitTargetA[0] = TARGET_DEST_DEST;
@@ -4099,13 +4216,17 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->EffectRadiusIndex[0] = 28;   // another missing radius
             count++;
             break;
-        case 71708: // Empowered Flare
-        case 72785: // Empowered Flare
-        case 72786: // Empowered Flare
-        case 72787: // Empowered Flare
+        case 71708: // Empowered Flare (Blood Prince Council)
+        case 72785: // Empowered Flare (Blood Prince Council)
+        case 72786: // Empowered Flare (Blood Prince Council)
+        case 72787: // Empowered Flare (Blood Prince Council)
             spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_DONE_BONUS;
             count++;
             break;
+         case 71340: // Pact of the Darkfallen (Blood-Queen Lana'thel)
+             spellInfo->DurationIndex = 21;
+             count++;
+             break;
         case 44614: // Frostfire Bolt
             spellInfo->StackAmount = 0; //TODO: remove when stacking of Decrease Run Speed % aura is fixed
             break;
@@ -4137,11 +4258,26 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->EffectMiscValue[1] = 127;
             count++;
             break;
+        case 71357: // Order Whelp
+            spellInfo->EffectRadiusIndex[0] = 22;
+            count++;
+            break;
+        case 70598: // Sindragosa's Fury
+            spellInfo->EffectImplicitTargetA[0] = TARGET_DST_CASTER;
+            count++;
+            break;
+        case 69846: // Frost Bomb
+            spellInfo->speed = 10;
+            spellInfo->EffectImplicitTargetA[0] = TARGET_DEST_TARGET_ANY;
+            spellInfo->EffectImplicitTargetB[0] = TARGET_UNIT_TARGET_ANY;
+            spellInfo->Effect[1] = 0;
+            count++;
+            break;
         default:
             break;
         }
 
-        switch(spellInfo->SpellFamilyName)
+        switch (spellInfo->SpellFamilyName)
         {
             case SPELLFAMILY_WARRIOR:
                 // Shout

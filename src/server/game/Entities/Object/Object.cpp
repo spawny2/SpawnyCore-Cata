@@ -156,6 +156,14 @@ void Object::_Create(uint32 guidlow, uint32 entry, HighGuid guidhigh)
     m_PackGUID.appendPackGUID(GetGUID());
 }
 
+std::string Object::_ConcatFields(uint16 startIndex, uint16 size) const
+{
+    std::ostringstream ss;
+    for (uint16 index = 0; index < size; ++index)
+        ss << GetUInt32Value(index + startIndex) << " ";
+    return ss.str();
+}
+
 void Object::BuildMovementUpdateBlock(UpdateData * data, uint32 flags) const
 {
     /*ByteBuffer buf(500);
@@ -2181,6 +2189,7 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
     }
 
     // petentry == 0 for hunter "call pet" (current pet summoned if any)
+    sLog->outDebug("Player::SummonPet PetSlot [%i]", int32(slotID));
     if (!entry)
     {
         delete pet;

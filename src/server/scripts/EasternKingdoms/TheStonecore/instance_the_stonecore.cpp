@@ -32,14 +32,14 @@ class instance_the_stonecore : public InstanceMapScript
 public:
     instance_the_stonecore() : InstanceMapScript("instance_the_stonecore", 725) { }
 
-    InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+    InstanceScript* GetInstanceScript(InstanceMap* map) const
     {
-        return new instance_the_stonecore_InstanceMapScript(pMap);
+        return new instance_the_stonecore_InstanceMapScript(map);
     }
 
     struct instance_the_stonecore_InstanceMapScript : public InstanceScript
     {
-        instance_the_stonecore_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {};
+        instance_the_stonecore_InstanceMapScript(Map* map) : InstanceScript(map) {};
 
         uint64 uiCorborus;
         uint64 uiSlabhide;
@@ -48,15 +48,15 @@ public:
         uint32 uiTeamInInstance;
         uint32 uiEncounter[MAX_ENCOUNTER];
 
-       void Initialize()
-       {
-            for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                uiEncounter[i] = NOT_STARTED;
-
-            uiCorborus = 0;
-            uiSlabhide = 0;
-            uiOzruk = 0;
-            uiHighPriestessAzil = 0;
+        void Initialize()
+        {
+             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+                 uiEncounter[i] = NOT_STARTED;
+ 
+             uiCorborus = 0;
+             uiSlabhide = 0;
+             uiOzruk = 0;
+             uiHighPriestessAzil = 0;
 
         }
 
@@ -65,8 +65,8 @@ public:
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
                 if (uiEncounter[i] == IN_PROGRESS)
                     return true;
-
-            return false;
+ 
+             return false;
         }
 
         void OnCreatureCreate(Creature* pCreature, bool /*add*/)
@@ -128,7 +128,7 @@ public:
             }
 
             if (data == DONE)
-                SaveToDB();
+               SaveToDB();
         }
 
         uint32 GetData(uint32 type)
@@ -186,12 +186,12 @@ public:
                     if (uiEncounter[i] == IN_PROGRESS)
                         uiEncounter[i] = NOT_STARTED;
 
-            } else OUT_LOAD_INST_DATA_FAIL;
+            } 
+            else OUT_LOAD_INST_DATA_FAIL;
 
             OUT_LOAD_INST_DATA_COMPLETE;
         }
     };
-
 };
 
 
