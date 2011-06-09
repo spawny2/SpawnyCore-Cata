@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2005-2011 MaNGOS <http://www.getmangos.com/>
  *
  * Copyright (C) 2008-2011 Trinity <http://www.trinitycore.org/>
@@ -16480,7 +16480,7 @@ Player* Player::LoadFromDB(uint32 guid, SQLQueryHolder * holder, WorldSession * 
     return NULL;
 }
 
-//On envoie le result pour ne pas perdre de temps à refaire le calcul...
+// We send the result to not waste time to do it again
 bool Player::_LoadFromDB(uint32 guid, SQLQueryHolder * holder, PreparedQueryResult & result)
 {
     //TODO : drop ammoid & stable_slots
