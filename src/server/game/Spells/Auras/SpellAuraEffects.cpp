@@ -2468,6 +2468,26 @@ void AuraEffect::TriggerSpell(Unit *target, Unit *caster) const
                     case 39857:
                         triggerSpellId = 39856;
                         break;
+                    // Prismatic Shield
+                    case 40879:
+                        switch (rand()%6)
+                        {
+                            case 0: triggerSpellId = 40880; break;
+                            case 1: triggerSpellId = 40882; break;
+                            case 2: triggerSpellId = 40883; break;
+                            case 3: triggerSpellId = 40891; break;
+                            case 4: triggerSpellId = 40896; break;
+                            case 5: triggerSpellId = 40897; break;
+                        }
+                        break;
+                    // Aura of Desire
+                    case 41350:
+                        {
+                        AuraEffect * aurEff = this->GetBase()->GetEffect(EFFECT_1);
+                        int32 amount = aurEff->GetAmount() - 5 < -100 ? -100 : aurEff->GetAmount() - 5;
+                        aurEff->ChangeAmount(amount, false);
+                        return;
+                        }
                     // Personalized Weather
                     case 46736:
                         triggerSpellId = 46737;
@@ -6232,11 +6252,11 @@ void AuraEffect::HandleAuraDummy(AuraApplication const *aurApp, uint8 mode, bool
                     break;
                 case SPELLFAMILY_PRIEST:
                     // Vampiric Touch
-                    if (m_spellProto->SpellFamilyFlags[1] & 0x0400 && aurApp->GetRemoveMode() == AURA_REMOVE_BY_ENEMY_SPELL)
+                    if (m_spellProto->SpellFamilyFlags[1] & 0x0400 && aurApp->GetRemoveMode() == AURA_REMOVE_BY_ENEMY_SPELL && GetEffIndex() == 0)
                     {
                         if (AuraEffect const * aurEff = GetBase()->GetEffect(1))
                         {
-                            int32 damage = aurEff->GetAmount() * 4;
+                            int32 damage = aurEff->GetAmount() * 8;
                             // backfire damage
                             target->CastCustomSpell(target, 64085, &damage, NULL, NULL, true, NULL, NULL, GetCasterGUID());
                         }
