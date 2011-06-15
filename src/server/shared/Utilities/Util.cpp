@@ -30,6 +30,7 @@
 #endif
 #include <ace/TSS_T.h>
 #include <ace/INET_Addr.h>
+#include <arpa/inet.h>
 
 #ifdef USE_SFMT_FOR_RNG
 typedef ACE_TSS<SFMTRand> SFMTRandTSS;
