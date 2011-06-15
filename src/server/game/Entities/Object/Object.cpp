@@ -291,6 +291,8 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
     // 0x20
     if (flags & UPDATEFLAG_LIVING)
     {
+        assert(dynamic_cast<Unit*>(const_cast<Object*>(this)) != NULL);
+        
         ((Unit*)this)->BuildMovementPacket(data);
 
         *data << ((Unit*)this)->GetSpeed(MOVE_WALK);
@@ -378,6 +380,7 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
     {
         if (flags & UPDATEFLAG_POSITION)
         {
+            assert(dynamic_cast<WorldObject*>(const_cast<Object*>(this)) != NULL);
             *data << uint8(0);                              // unk PGUID!
             *data << ((WorldObject*)this)->GetPositionX();
             *data << ((WorldObject*)this)->GetPositionY();
@@ -400,6 +403,7 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
                 // 0x02
                 if (flags & UPDATEFLAG_TRANSPORT && ((GameObject*)this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
                 {
+                    assert(dynamic_cast<GameObject*>(const_cast<Object*>(this)) != NULL);
                     *data << (float)0;
                     *data << (float)0;
                     *data << (float)0;
@@ -407,6 +411,7 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
                 }
                 else
                 {
+                    assert(dynamic_cast<WorldObject*>(const_cast<Object*>(this)) != NULL);
                     *data << ((WorldObject *)this)->GetPositionX();
                     *data << ((WorldObject *)this)->GetPositionY();
                     *data << ((WorldObject *)this)->GetPositionZ();
@@ -419,6 +424,7 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
     // 0x4
     if (flags & UPDATEFLAG_HAS_TARGET)                       // packed guid (current target guid)
     {
+        assert(dynamic_cast<Unit*>(const_cast<Object*>(this)) != NULL);
         if (Unit *victim = ((Unit*)this)->getVictim())
             data->append(victim->GetPackGUID());
         else
@@ -434,8 +440,9 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
     // 0x80
     if (flags & UPDATEFLAG_VEHICLE)                          // unused for now
     {
+        assert(dynamic_cast<Unit*>(const_cast<Object*>(this)) != NULL);
         *data << uint32(((Unit*)this)->GetVehicleKit()->GetVehicleInfo()->m_ID);  // vehicle id
-        *data << float(((Creature*)this)->GetOrientation());  // facing adjustment
+        *data << float(((Unit*)this)->GetOrientation());  // facing adjustment
     }
 
     // 0x800
@@ -447,6 +454,7 @@ void Object::_BuildMovementUpdate(ByteBuffer * data, uint16 flags) const
     // 0x200
     if (flags & UPDATEFLAG_ROTATION)
     {
+        assert(dynamic_cast<GameObject*>(const_cast<Object*>(this)) != NULL);
         *data << uint64(((GameObject*)this)->GetRotation());
     }
     
@@ -1882,7 +1890,7 @@ namespace Trinity
                 : i_object(obj), i_msgtype(msgtype), i_textId(textId), i_language(language), i_targetGUID(targetGUID) {}
             void operator()(WorldPacket& data, LocaleConstant loc_idx)
             {
-                char const* text = sObjectMgr->GetTrinityString(i_textId,loc_idx);
+                char const* text = sObjectMgr->GetSkyFireString(i_textId,loc_idx);
 
                 // TODO: i_object.GetName() also must be localized?
                 i_object.BuildMonsterChat(&data,i_msgtype,text,i_language,i_object.GetNameForLocaleIdx(loc_idx),i_targetGUID);
@@ -1962,7 +1970,7 @@ void WorldObject::MonsterWhisper(int32 textId, uint64 receiver, bool IsBossWhisp
         return;
 
     LocaleConstant loc_idx = player->GetSession()->GetSessionDbLocaleIndex();
-    char const* text = sObjectMgr->GetTrinityString(textId, loc_idx);
+    char const* text = sObjectMgr->GetSkyFireString(textId, loc_idx);
 
     WorldPacket data(SMSG_MESSAGECHAT, 200);
     BuildMonsterChat(&data,IsBossWhisper ? CHAT_MSG_RAID_BOSS_WHISPER : CHAT_MSG_MONSTER_WHISPER,text,LANG_UNIVERSAL,GetNameForLocaleIdx(loc_idx),receiver);
