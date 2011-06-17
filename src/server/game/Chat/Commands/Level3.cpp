@@ -4672,10 +4672,8 @@ bool ChatHandler::HandleGMFlyCommand(const char *args)
 
     WorldPacket data(SMSG_MULTIPLE_PACKETS, 14);
     if (strncmp(args, "on", 3) == 0)
-        //data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
         data << uint16(SMSG_MOVE_SET_CAN_FLY);
     else if (strncmp(args, "off", 4) == 0)
-        //data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
         data << uint16(SMSG_MOVE_UNSET_CAN_FLY);
     else
     {
