@@ -3712,25 +3712,26 @@ void SpellMgr::LoadSpellCustomAttr()
         case 61721: // Polymorph (other animal)
         case 61780: // Polymorph (other animal)
         case 28271: // Polymorph (other animal)
-        case 8122: // Physic Scream
-        case 5484: // Howl of Terror
+        case 8122:  // Physic Scream
+        case 5484:  // Howl of Terror
             spellInfo->AuraInterruptFlags = AURA_INTERRUPT_FLAG_TAKE_DAMAGE;
             count++;
             break;
         case 85673: // World of Glory
+        case 89023: // Blesse life (spell, not talent)
             spellInfo->Effect[1] = 0;
             count++;
             break;
         case 1680: // Whirlwind  (Fury)
-            spellInfo->EffectRadiusIndex[0] = 8;
-            spellInfo->EffectRadiusIndex[1] = 8;
-            spellInfo->EffectRadiusIndex[2] = 8;
+            spellInfo->EffectRadiusIndex[0] = 14;
+            spellInfo->EffectRadiusIndex[1] = 14;
+            spellInfo->EffectRadiusIndex[2] = 14;
             count++;
             break;
         case 50622: // Whirlwind (triggered by Bladestorm)
-            spellInfo->EffectRadiusIndex[0] = 8;
-            spellInfo->EffectRadiusIndex[1] = 8;
-            spellInfo->EffectRadiusIndex[2] = 8;
+            spellInfo->EffectRadiusIndex[0] = 14;
+            spellInfo->EffectRadiusIndex[1] = 14;
+            spellInfo->EffectRadiusIndex[2] = 14;
             count++;
             break;
         case 44543: //Fingers of Frost rank 1
@@ -4160,6 +4161,10 @@ void SpellMgr::LoadSpellCustomAttr()
         case 33206: // Pain Suppression
             spellInfo->AttributesEx5 &= ~SPELL_ATTR5_USABLE_WHILE_STUNNED;
             count++;
+            break;
+        case 81782: // Power Word : Barrier 
+	        spellInfo->DurationIndex = 39;
+	        count++;
             break;
         // this is here until targetAuraSpell and alike support SpellDifficulty.dbc
         case 70459: // Ooze Eruption Search Effect
