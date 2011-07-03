@@ -831,6 +831,7 @@ bool SpellMgr::_isPositiveEffect(uint32 spellId, uint32 effIndex, bool deep) con
             switch (spellId)
             {
                 case 34700: // Allergic Reaction
+                case 34709: // Shadow Sight
                 case 61987: // Avenging Wrath Marker
                 case 61988: // Divine Shield exclude aura
                     return false;
@@ -1278,7 +1279,7 @@ void SpellMgr::LoadSpellTargetPositions()
         }
 
         mSpellTargetPositions[Spell_ID] = st;
-        ++count;
+        count++;
 
     }
     while (result->NextRow());
@@ -1394,7 +1395,7 @@ void SpellMgr::LoadSpellProcEvents()
             }
             customProc++;
         }
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -1459,7 +1460,7 @@ void SpellMgr::LoadSpellBonusess()
             sLog->outError("SPC: DB SP coef doesn't match DBC. ID: %d, DB: %f, DBC: %f, Name: %s", entry, sbe.direct_damage, DBCcoef, spell->SpellName);
         }
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -1672,7 +1673,7 @@ void SpellMgr::LoadSpellGroups()
 
         for (std::set<uint32>::iterator spellItr = spells.begin() ; spellItr != spells.end() ; ++spellItr)
         {
-            ++count;
+            count++;
             mSpellSpellGroup.insert(SpellSpellGroupMap::value_type(*spellItr, SpellGroup(*groupItr)));
         }
     }
@@ -1720,7 +1721,7 @@ void SpellMgr::LoadSpellGroupStackRules()
 
         mSpellGroupStack[(SpellGroup)group_id] = (SpellGroupStackRule)stack_rule;
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -1760,7 +1761,7 @@ void SpellMgr::LoadSpellThreats()
 
         mSpellThreatMap[entry] = Threat;
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -2153,7 +2154,7 @@ void SpellMgr::LoadSpellLearnSpells()
 
         mSpellLearnSpells.insert(SpellLearnSpellMap::value_type(spell_id,node));
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -2266,7 +2267,7 @@ void SpellMgr::LoadSpellPetAuras()
             mSpellPetAuraMap[(spell<<8) + eff] = pa;
         }
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -2322,7 +2323,7 @@ void SpellMgr::LoadPetLevelupSpellMap()
                     ++family_count;
 
                 spellSet.insert(PetLevelupSpellSet::value_type(spell->spellLevel,spell->Id));
-                ++count;
+                count++;
             }
         }
     }
@@ -2749,7 +2750,7 @@ void SpellMgr::LoadSpellAreas()
         if (spellArea.auraSpell)
             mSpellAreaForAuraMap.insert(SpellAreaForAuraMap::value_type(abs(spellArea.auraSpell),sa));
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -2905,7 +2906,7 @@ void SpellMgr::LoadSkillLineAbilityMap()
             continue;
 
         mSkillLineAbilityMap.insert(SkillLineAbilityMap::value_type(SkillInfo->spellId,SkillInfo));
-        ++count;
+        count++;
     }
 
     sLog->outString(">> Loaded %u SkillLineAbility MultiMap Data in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
@@ -2940,6 +2941,9 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             // Frost Nova / Freeze (Water Elemental)
             if (spellproto->SpellIconID == 193)
                 return DIMINISHING_CONTROL_ROOT;
+            // Dragon's Breath
+            else if (spellproto->SpellFamilyFlags[0] & 0x800000)
+                return DIMINISHING_KNOCKOUT;
             break;
         }
         case SPELLFAMILY_ROGUE:
@@ -2967,7 +2971,7 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             if (spellproto->SpellFamilyFlags[0] & 0x80000)
                 return DIMINISHING_DEATHCOIL;
             // Curses/etc
-            else if (spellproto->SpellFamilyFlags[0] & 0x80000000)
+            else if ((spellproto->SpellFamilyFlags[0] & 0x80000000) || (spellproto->SpellFamilyFlags[1] & 0x200))
                 return DIMINISHING_LIMITONLY;
             // Howl of Terror
             else if (spellproto->SpellFamilyFlags[1] & 0x8)
@@ -2991,6 +2995,9 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             // Faerie Fire
             else if (spellproto->SpellFamilyFlags[0] & 0x400)
                 return DIMINISHING_LIMITONLY;
+            // Nature's Grasp
+            else if (spellproto->SpellFamilyFlags[0] & 0x00000200)
+                return DIMINISHING_CONTROL_ROOT;
             break;
         }
         case SPELLFAMILY_WARRIOR:
@@ -3011,6 +3018,12 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             // Repentance
             if (spellproto->SpellFamilyFlags[0] & 0x4)
                 return DIMINISHING_POLYMORPH;
+            // Judgement of Justice - limit duration to 10s in PvP
+            if (spellproto->SpellFamilyFlags[0] & 0x100000)
+                return DIMINISHING_LIMITONLY;
+            // Turn Evil
+            else if ((spellproto->SpellFamilyFlags[1] & 0x804000) && spellproto->SpellIconID == 309)
+                return DIMINISHING_FEAR_BLIND;
             break;
         }
         case SPELLFAMILY_DEATHKNIGHT:
@@ -3032,6 +3045,12 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             // Scatter Shot
             if ((spellproto->SpellFamilyFlags[0] & 0x40000) && spellproto->SpellIconID == 132)
                 return DIMINISHING_NONE;
+            // Wyvern Sting mechanic is MECHANIC_SLEEP but the diminishing is DIMINISHING_DISORIENT
+            else if ((spellproto->SpellFamilyFlags[1] & 0x1000) && spellproto->SpellIconID == 1721)
+                return DIMINISHING_KNOCKOUT;
+            // Freezing Arrow
+            else if (spellproto->SpellFamilyFlags[0] & 0x8)
+                return DIMINISHING_KNOCKOUT;
             break;
         }
         default:
@@ -3391,7 +3410,7 @@ void SpellMgr::LoadSpellEnchantProcData()
 
         mSpellEnchantProcEventMap[enchantId] = spe;
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
@@ -3705,6 +3724,47 @@ void SpellMgr::LoadSpellCustomAttr()
 
         switch (i)
         {
+        case 77515: // Mastery: Dreadblade
+            spellInfo->EffectBasePoints[0] = 20;
+            count++;
+            break;
+        case 77514: // Mastery: Frozen Heart
+            spellInfo->EffectBasePoints[0] = 16;
+            count++;
+            break;
+        case 77493: // Mastery: Razor Claws
+            spellInfo->EffectBasePoints[0] = 25.04;
+            count++;
+            break;
+        case 76658: // Mastery: Essence of the Viper
+            spellInfo->EffectBasePoints[0] = 8;
+            count++;
+            break;
+        case 76657: // Mastery: Master of Beasts
+            spellInfo->EffectBasePoints[0] = 13.6;
+            count++;
+            break;
+        case 76595: // Mastery: Flashburn
+            spellInfo->EffectBasePoints[0] = 22.4;
+            count++;
+            break;
+        case 76671: // Mastery: Divine Bulwark
+            spellInfo->EffectBasePoints[0] = 18;
+            count++;
+            break;
+        case 77220: // Mastery: Fiery Apocalypse
+            spellInfo->EffectBasePoints[0] = 10.8;
+            count++;
+            break;
+        case 76857: // Mastery: Critical Block
+            spellInfo->EffectBasePoints[0] = 12;
+            spellInfo->EffectBasePoints[1] = 12;
+            count++;
+            break;
+        case 77489: // Mastery: Echo of Light
+            spellInfo->StackAmount = 100; // should be inf
+            count++;
+            break;
         case 51514: // Hex
         case 118:   // Polymorph
         case 61305: // Polymorph (other animal)
@@ -3765,8 +3825,8 @@ void SpellMgr::LoadSpellCustomAttr()
             count++;
             break;
         case 49838: // Stop Time
-        case 50526: // Wandering Plague
         case 52916: // Honor Among Thieves
+        case 50526: // Wandering Plague
             spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
             count++;
             break;
@@ -3779,7 +3839,7 @@ void SpellMgr::LoadSpellCustomAttr()
         case 8494: // Mana Shield (rank 2)
             // because of bug in dbc
             spellInfo->procChance = 0;
-            ++count;
+            count++;
             break;
         // Heroism
         case 32182:
@@ -3870,7 +3930,7 @@ void SpellMgr::LoadSpellCustomAttr()
         case 64844: // Divine Hymn 
         case 64904: // Hymn of Hope
             spellInfo->AttributesEx &= ~SPELL_ATTR1_NEGATIVE;
-            ++count;
+            count++;
             break;
         case 44978: case 45001: case 45002:     // Wild Magic
         case 45004: case 45006: case 45010:     // Wild Magic
@@ -4025,7 +4085,7 @@ void SpellMgr::LoadSpellCustomAttr()
         case 47569: // Improved Shadowform (Rank 1)
             // with this spell atrribute aura can be stacked several times
             spellInfo->Attributes &= ~SPELL_ATTR0_NOT_SHAPESHIFT;
-            ++count;
+            count++;
             break;
         case 8145: // Tremor Totem (instant pulse)
         case 6474: // Earthbind Totem (instant pulse)
@@ -4042,7 +4102,7 @@ void SpellMgr::LoadSpellCustomAttr()
             break;
         case 61607: // Mark of Blood
             spellInfo->AttributesEx |= SPELL_ATTR1_NO_THREAT;
-            ++count;
+            count++;
             break;
         // some dummy spell only has dest, should push caster in this case
         case 62324: // Throw Passenger
@@ -4091,9 +4151,15 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->EffectImplicitTargetA[0] = TARGET_UNIT_CASTER;
             count++;
             break;
+        case 35098: // Rapid Killing
+        case 35099:
+            // just a temp solution to make Rapid Recuperation proc from this
+            spellInfo->AttributesEx2 |= SPELL_ATTR2_TRIGGERED_CAN_TRIGGER;
+            count++;
+            break;
         case 12051: // Evocation - now we can interrupt this
             spellInfo->InterruptFlags |= SPELL_INTERRUPT_FLAG_INTERRUPT;
-            ++count;
+            count++;
             break;
         case 26573 : //Consecration
             spellInfo->EffectTriggerSpell[2] = 82366;
@@ -4249,10 +4315,17 @@ void SpellMgr::LoadSpellCustomAttr()
              break;
         case 44614: // Frostfire Bolt
             spellInfo->StackAmount = 0; //TODO: remove when stacking of Decrease Run Speed % aura is fixed
+            count++;
             break;
         case 74434: // Soulburn
             spellInfo->procCharges = 1;
+            count++;
             break;
+		case 81008: //Quake - Crystalspawn Giant
+		case 92631: //Quake - Crystalspawn Giant
+			spellInfo->EffectRadiusIndex[0] = 80;
+			count++;
+			break;
         case 23126: // World Enlarger
             spellInfo->AuraInterruptFlags |= AURA_INTERRUPT_FLAG_SPELL_ATTACK;
             count++;
@@ -4472,7 +4545,7 @@ void SpellMgr::LoadSpellLinked()
         }
         mSpellLinkedMap[trigger].push_back(effect);
 
-        ++count;
+        count++;
     }
     while (result->NextRow());
 
