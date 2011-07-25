@@ -846,7 +846,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     // Get the account information from the realmd database
     std::string safe_account = accountName; // Duplicate, else will screw the SHA hash verification below
-    LoginDatabase.escape_string (safe_account);
+    LoginDatabase.EscapeString (safe_account);
     // No SQL injection, username escaped.
 
     QueryResult result =
@@ -1012,7 +1012,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     // Update the last_ip in the database
     // No SQL injection, username escaped.
-    LoginDatabase.escape_string (address);
+    LoginDatabase.EscapeString (address);
 
     LoginDatabase.PExecute ("UPDATE account "
                             "SET last_ip = '%s' "
@@ -1069,9 +1069,12 @@ int WorldSocket::HandlePing (WorldPacket& recvPacket)
 
                 if (m_Session && m_Session->GetSecurity() == SEC_PLAYER)
                 {
-                    sLog->outError  ("WorldSocket::HandlePing: Player kicked for "
-                                    "over-speed pings address = %s",
-                                    GetRemoteAddress().c_str());
+                    Player* _player = m_Session->GetPlayer();
+                    sLog->outError("WorldSocket::HandlePing: Player (account: %u, GUID: %u, name: %s) kicked for over-speed pings (address: %s)",
+                        m_Session->GetAccountId(),
+                        _player ? _player->GetGUIDLow() : 0,
+                        _player ? _player->GetName() : "<none>",
+                        GetRemoteAddress().c_str());
 
                     return -1;
                 }

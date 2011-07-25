@@ -375,7 +375,7 @@ pAuraEffectHandler AuraEffectHandler[TOTAL_AURAS]=
     &AuraEffect::HandleNoImmediateEffect,                         //315 SPELL_AURA_UNDERWATER_WALKING todo
     &AuraEffect::HandleNoImmediateEffect,                         //316 SPELL_AURA_PERIODIC_HASTE implemented in AuraEffect::CalculatePeriodic
     &AuraEffect::HandleAuraModSpellPowerPercent,                  //317 SPELL_AURA_MOD_SPELL_POWER_PCT
-    &AuraEffect::HandleNULL,                                      //318 SPELL_AURA_MASTERY
+    &AuraEffect::HandleNoImmediateEffect,                         //318 SPELL_AURA_MASTERY
     &AuraEffect::HandleModMeleeSpeedPct,                          //319 This is actually mod haste (?)
     &AuraEffect::HandleNULL,                                      //320
     &AuraEffect::HandleNULL,                                      //321
@@ -1471,6 +1471,14 @@ void AuraEffect::PeriodicTick(AuraApplication * aurApp, Unit * caster) const
                         damage += (damage+1)/2;           // +1 prevent 0.5 damage possible lost at 1..4 ticks
                     // 5..8 ticks have normal tick damage
                 }
+                // Explosive Shot
+                if (GetSpellProto()->Id == 53301)
+                    damage = int32(damage + (0.232f * GetBase()->GetCaster()->GetTotalAttackPowerValue(RANGED_ATTACK)));
+
+                // Serpent String
+                if (GetSpellProto()->Id == 1978)
+                    damage = int32(GetBase()->GetCaster()->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.4f + (damage * 15 / 3));
+
                 // There is a Chance to make a Soul Shard when Drain soul does damage
                 if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARLOCK && (GetSpellProto()->SpellFamilyFlags[0] & 0x00004000))
                 {
@@ -1739,27 +1747,39 @@ void AuraEffect::PeriodicTick(AuraApplication * aurApp, Unit * caster) const
 
                 int32 addition = int32(float(damage * GetTotalTicks()) * ((6-float(2*(GetTickNumber()-1)))/100));
 
-                    // Item - Druid T10 Restoration 2P Bonus
-                    if (AuraEffect * aurEff = caster->GetAuraEffect(70658, 0))
-                        addition += abs(int32((addition * aurEff->GetAmount()) / 50));
+                // Item - Druid T10 Restoration 2P Bonus
+                if (AuraEffect * aurEff = caster->GetAuraEffect(70658, 0))
+                    addition += abs(int32((addition * aurEff->GetAmount()) / 50));
 
-                    damage += addition;
+                damage += addition;
             }
-
-            if (m_spellProto->Id == 774)
+            switch (m_spellProto->Id)
             {
-                float bonus = 1.0f;
-                if (caster->HasAura(78784)) // Blessing of the Grove rank 1
-                    bonus += 0.02f;
-                if (caster->HasAura(78785)) // Blessing of the Grove rank 2
-                    bonus += 0.04f;
-                if (caster->HasAura(17111)) // Improved Rejuvenation rank 1
-                    bonus += 0.05f;
-                if (caster->HasAura(17112)) // Improved Rejuvenation rank 2
-                    bonus += 0.1f;
-                if (caster->HasAura(17113)) // Improved Rejuvenation rank 3
-                    bonus += 0.15f;
-                damage = int32 (damage * bonus);
+                case 774:
+                {
+                    float bonus = 1.0f;
+                    if (caster->HasAura(78784)) // Blessing of the Grove rank 1
+                        bonus += 0.02f;
+                    if (caster->HasAura(78785)) // Blessing of the Grove rank 2
+                        bonus += 0.04f;
+                    if (caster->HasAura(17111)) // Improved Rejuvenation rank 1
+                        bonus += 0.05f;
+                    if (caster->HasAura(17112)) // Improved Rejuvenation rank 2
+                        bonus += 0.1f;
+                    if (caster->HasAura(17113)) // Improved Rejuvenation rank 3
+                        bonus += 0.15f;
+                    damage = int32 (damage * bonus);
+                    break;
+                 }
+                 case 29841: // Second Wind r1
+                    damage = int32(caster->GetMaxHealth() * 0.002f);
+                    break;
+                 case 29842: // Second Wind r2
+                 case 42771: // Second Wind r2
+                    damage = int32(caster->GetMaxHealth() * 0.005f);
+                    break;
+                default:
+                    break;
             }
 
             bool crit = IsPeriodicTickCrit(target, caster);

@@ -115,6 +115,7 @@ m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), m
 
     m_updateFlag = (UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION);
 
+    DmgandHealDoneTimer = 0;
     m_attackTimer[BASE_ATTACK] = 0;
     m_attackTimer[OFF_ATTACK] = 0;
     m_attackTimer[RANGED_ATTACK] = 0;
@@ -737,22 +738,6 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
 
         if (pVictim->GetTypeId() == TYPEID_PLAYER)
             pVictim->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_DAMAGE_RECEIVED, damage);
-
-        // Blood Craze
-        if (pVictim->GetTypeId() == TYPEID_PLAYER)
-        {
-            if (pVictim->HasAura(16487)) // Rank 1
-                if (roll_chance_f(10.0f))
-                    pVictim->CastSpell(pVictim, 16488, true);
-
-            if (pVictim->HasAura(16489)) // Rank 2
-                if (roll_chance_f(10.0f))
-                    pVictim->CastSpell(pVictim, 16490, true);
-
-            if (pVictim->HasAura(16492)) // Rank 3
-                if (roll_chance_f(10.0f))
-                    pVictim->CastSpell(pVictim, 16491, true);
-        }
 
         // Brain Freeze
         if (GetTypeId() == TYPEID_PLAYER)
@@ -5881,9 +5866,9 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, AuraEffect* trigger
 
                 switch (dummySpell->Id)
                 {
-                    case 29838: triggered_spell_id=29842; break;
-                    case 29834: triggered_spell_id=29841; break;
-                    case 42770: triggered_spell_id=42771; break;
+                    case 29838: triggered_spell_id = 29842; break;
+                    case 29834: triggered_spell_id = 29841; break;
+                    case 42770: triggered_spell_id = 42771; break;
                     default:
                         sLog->outError("Unit::HandleDummyAuraProc: non handled spell id: %u (SW)",dummySpell->Id);
                     return false;
@@ -6108,6 +6093,14 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, AuraEffect* trigger
                     basepoints0 = target->getLevel() * 125;
 
                 triggered_spell_id = 47753;
+                break;
+            }
+            //Mind Melt
+            case 87160:
+            case 81292:
+            {
+                if(procSpell->Id != 73510)
+                    return false;
                 break;
             }
             // Body and Soul
@@ -12179,7 +12172,7 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
             Unmount();
     }
     
-    if(GetTypeId() == TYPEID_PLAYER && ToPlayer()->getRace() == RACE_WORGEN)
+    if(GetTypeId() == TYPEID_PLAYER && ToPlayer()->getRace() == RACE_WORGEN && HasAura(94293))
     {
         //TODO: make a hackfix for worgen starting zone.
         ToPlayer()->setInWorgenForm(UNIT_FLAG2_WORGEN_TRANSFORM3);
@@ -17106,9 +17099,10 @@ void Unit::BuildMovementPacket(ByteBuffer *data) const
             break;
     }
 
-    if (GetVehicle())
-        if (!this->HasUnitMovementFlag(MOVEMENTFLAG_ROOT))
-            sLog->outError("Unit does not have MOVEMENTFLAG_ROOT but is in vehicle!");
+    if (Vehicle* pVehicle = GetVehicle())
+        if (!HasUnitMovementFlag(MOVEMENTFLAG_ROOT))
+            sLog->outError("Unit (GUID: " UI64FMTD ", entry: %u) does not have MOVEMENTFLAG_ROOT but is in vehicle (ID: %u)!",
+                GetGUID(), GetEntry(), pVehicle->GetVehicleInfo()->m_ID);
 
     *data << uint32(GetUnitMovementFlags()); // movement flags
     *data << uint16(m_movementInfo.flags2); // 2.3.0

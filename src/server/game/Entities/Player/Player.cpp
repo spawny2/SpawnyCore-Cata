@@ -595,6 +595,10 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     m_lastHonorUpdateTime = time(NULL);
     //m_honorPoints = 0;
     //m_arenaPoints = 0;
+    m_maxWeekRating[CP_SOURCE_ARENA] = 0;
+    m_maxWeekRating[CP_SOURCE_RATED_BG] = 0;
+    m_conquestPointsWeekCap[CP_SOURCE_ARENA] = PLAYER_DEFAULT_CONQUEST_POINTS_WEEK_CAP;
+    m_conquestPointsWeekCap[CP_SOURCE_RATED_BG] = uint16(PLAYER_DEFAULT_CONQUEST_POINTS_WEEK_CAP * 1.222f); // +22,2%
     
     m_IsBGRandomWinner = false;
 
@@ -1604,6 +1608,9 @@ void Player::Update(uint32 p_time)
     //because we don't want player's ghost teleported from graveyard
     if (IsHasDelayedTeleport() && isAlive())
         TeleportTo(m_teleport_dest, m_teleport_options);
+
+    if (getLevel() >= 80)
+        RemoveOrAddMasterySpells();
 }
 
 void Player::setDeathState(DeathState s)
@@ -4833,29 +4840,28 @@ void Player::SetMovement(PlayerMovementType pType)
         case MOVE_ROOT:
         {
             //sLog->outError("MOVE ROOT");
-            data.Initialize(SMSG_FORCE_MOVE_ROOT,   GetPackGUID().size()+4); break;                  
+            data.Initialize(SMSG_FORCE_MOVE_ROOT,   GetPackGUID().size()); break;                  
             break;
         }
         case MOVE_UNROOT: 
         {
             //sLog->outError("MOVE UNROOT");
-            data.Initialize(SMSG_FORCE_MOVE_UNROOT, GetPackGUID().size()+4); break;
+            data.Initialize(SMSG_FORCE_MOVE_UNROOT, GetPackGUID().size()); break;
             break;
         }
         case MOVE_WATER_WALK:
         {
             //sLog->outError("MOVE WATER WALK");
             WorldPacket movewaterwalk(SMSG_MULTIPLE_PACKETS, 14);
-            movewaterwalk << uint16(SMSG_MOVE_WATER_WALK);
+            movewaterwalk << uint16(SMSG_SPLINE_MOVE_WATER_WALK);
             movewaterwalk.append(GetPackGUID());
-            movewaterwalk << uint32(0);                                      // unknown
             SendMessageToSet(&movewaterwalk, true);
             break;
         }
         case MOVE_LAND_WALK:
         {
             // sLog->outError("MOVE LAND WALK");
-            data.Initialize(SMSG_MOVE_LAND_WALK,    GetPackGUID().size()+4); break;                  
+            data.Initialize(SMSG_SPLINE_MOVE_LAND_WALK,    GetPackGUID().size()); break;                  
             break;
         }
         default:
@@ -4865,7 +4871,6 @@ void Player::SetMovement(PlayerMovementType pType)
         }
     }
     data.append(GetPackGUID());
-    data << uint32(0);
     GetSession()->SendPacket(&data);
 }
 
@@ -11012,32 +11017,29 @@ void Player::ModifyCurrency(uint32 id, int32 count)
         oldWeekCount = itr->second.weekCount;
     }
 
-    int32 newTotalCount = int32(oldTotalCount) + count;
+    int32 newTotalCount = oldTotalCount + count;
     if (newTotalCount < 0)
         newTotalCount = 0;
 
-    int32 newWeekCount = int32(oldWeekCount) + (count > 0 ? count : 0);
+    int32 newWeekCount = oldWeekCount + (count > 0 ? count : 0);
     if (newWeekCount < 0)
         newWeekCount = 0;
 
-    if (currency->TotalCap && int32(currency->TotalCap) < newTotalCount)
+    uint32 totalCap = _GetCurrencyTotalCap(currency);
+    if (totalCap && int32(totalCap) < newTotalCount)
     {
-        int32 delta = newTotalCount - int32(currency->TotalCap);
-        newTotalCount = int32(currency->TotalCap);
+        int32 delta = newTotalCount - totalCap;
+        newTotalCount = totalCap;
         newWeekCount -= delta;
     }
 
-    // TODO: fix conquest points
     uint32 weekCap = _GetCurrencyWeekCap(currency);
-    if (weekCap && int32(weekCap) < newTotalCount)
+    if (weekCap && int32(weekCap) < newWeekCount)
     {
-        int32 delta = newWeekCount - int32(weekCap);
-        newWeekCount = int32(weekCap);
+        int32 delta = newWeekCount - weekCap;
+        newWeekCount = weekCap;
         newTotalCount -= delta;
     }
-
-    // if we change total, we must change week
-    //ASSERT(((newTotalCount-oldTotalCount) != 0) == ((newWeekCount-oldWeekCount) != 0));
 
     if (newTotalCount != oldTotalCount)
     {
@@ -11070,19 +11072,8 @@ uint32 Player::_GetCurrencyWeekCap(const CurrencyTypesEntry* currency) const
     switch (currency->ID)
     {
     case CURRENCY_TYPE_CONQUEST_POINTS:
-        {
-            int32 conquestcap = sWorld->getIntConfig(CONFIG_MAX_CONQUEST_POINTS) * PLAYER_CURRENCY_PRECISION;
-            if (conquestcap > 0)
-                cap = conquestcap;
-            break;
-        }
-    case CURRENCY_TYPE_HONOR_POINTS:
-        {
-            uint32 honorcap = sWorld->getIntConfig(CONFIG_MAX_HONOR_POINTS) * PLAYER_CURRENCY_PRECISION;
-            if (honorcap > 0)
-                cap = honorcap;
-            break;
-        }
+        cap = uint32( m_conquestPointsWeekCap[CP_SOURCE_ARENA] * PLAYER_CURRENCY_PRECISION * sWorld->getRate(RATE_CONQUEST_POINTS_WEEK_LIMIT));
+        break;
     case CURRENCY_TYPE_JUSTICE_POINTS:
         {
             uint32 justicecap = sWorld->getIntConfig(CONFIG_MAX_JUSTICE_POINTS) * PLAYER_CURRENCY_PRECISION;
@@ -11091,12 +11082,32 @@ uint32 Player::_GetCurrencyWeekCap(const CurrencyTypesEntry* currency) const
             break;
         }
     }
+
     if (cap != currency->WeekCap && IsInWorld() && !GetSession()->PlayerLoading())
     {
         WorldPacket packet(SMSG_UPDATE_CURRENCY_WEEK_LIMIT, 8);
         packet << uint32(cap / PLAYER_CURRENCY_PRECISION);
         packet << uint32(currency->ID);
         GetSession()->SendPacket(&packet);
+    }
+
+    return cap;
+}
+
+uint32 Player::_GetCurrencyTotalCap(const CurrencyTypesEntry* currency) const
+{
+    uint32 cap = currency->TotalCap;
+    switch (currency->ID)
+    {
+    case CURRENCY_TYPE_CONQUEST_POINTS:
+        cap = sWorld->getIntConfig(CONFIG_MAX_CONQUEST_POINTS) * PLAYER_CURRENCY_PRECISION;
+        break;
+    case CURRENCY_TYPE_HONOR_POINTS:
+        cap = sWorld->getIntConfig(CONFIG_MAX_HONOR_POINTS) * PLAYER_CURRENCY_PRECISION;
+        break;
+    case CURRENCY_TYPE_JUSTICE_POINTS:
+        cap = sWorld->getIntConfig(CONFIG_MAX_JUSTICE_POINTS) * PLAYER_CURRENCY_PRECISION;
+        break;
     }
 
     return cap;
@@ -15016,6 +15027,15 @@ void Player::RewardQuest(Quest const *pQuest, uint32 reward, Object* questGiver,
         InitTalentForLevel();
     }
 
+    // currencies reward
+    for (uint32 i=0; i<QUEST_CURRENCY_COUNT; i++)
+    {
+        uint32 currId = pQuest->GetRewCurrencyId(i);
+        uint32 currCount = pQuest->GetRewCurrencyCount(i);
+        if( currId && currCount )
+            ModifyCurrency(currId, currCount * PLAYER_CURRENCY_PRECISION);
+    }
+
     // Send reward mail
     if (uint32 mail_template_id = pQuest->GetRewMailTemplateId())
     {
@@ -17010,6 +17030,7 @@ bool Player::_LoadFromDB(uint32 guid, SQLQueryHolder * holder, PreparedQueryResu
     }
 
     _LoadCurrency(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CURRENCY));
+    _LoadConquestPointsWeekCap(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CP_WEEK_CAP));
     _LoadTalents(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADTALENTS));
     _LoadTalentBranchSpecs(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADTALENTBRANCHSPECS));
     _LoadSpells(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADSPELLS));
@@ -17906,15 +17927,47 @@ void Player::_LoadCurrency(PreparedQueryResult result)
                 continue;
             }
 
-            uint32 weekCap = _GetCurrencyWeekCap(entry);
+            uint32 weekCap  = _GetCurrencyWeekCap(entry);
+            uint32 totalCap = _GetCurrencyTotalCap(entry);
 
             PlayerCurrency cur;
 
             cur.state = PLAYERCURRENCY_UNCHANGED;
-            cur.totalCount = totalCount > entry->TotalCap ? entry->TotalCap : totalCount;
-            cur.weekCount = weekCount > weekCap ? weekCap : weekCount;
+
+            if (totalCap == 0) // unlimited, don't check
+                cur.totalCount = totalCount;
+            else
+                cur.totalCount = totalCount > totalCap ? totalCap : totalCount;
+
+            if (weekCap == 0)
+                cur.weekCount = weekCount;
+            else
+                cur.weekCount = weekCount > weekCap ? weekCap : weekCount;
 
             m_currencies[currency_id] = cur;
+        }
+        while(result->NextRow());
+    }
+}
+
+void Player::_LoadConquestPointsWeekCap(PreparedQueryResult result)
+{
+    //           0         1            2
+    // "SELECT source, maxWeekRating, weekCap FROM character_cp_weekcap WHERE guid = ?"
+
+    if (result)
+    {
+        do
+        {
+            Field *fields = result->Fetch();
+
+            uint16 source = fields[0].GetUInt16();
+            if (source != CP_SOURCE_ARENA && source != CP_SOURCE_RATED_BG)
+                continue;
+            
+            m_maxWeekRating[source] = fields[1].GetUInt16();
+            m_conquestPointsWeekCap[source] = fields[2].GetUInt16();
+
         }
         while(result->NextRow());
     }
@@ -18389,7 +18442,7 @@ void Player::SaveToDB()
     outDebugValues();
 
     std::string sql_name = m_name;
-    CharacterDatabase.escape_string(sql_name);
+    CharacterDatabase.EscapeString(sql_name);
 
     //TODO: drop ammoid
     //      drop stable_slots
@@ -18549,6 +18602,7 @@ void Player::SaveToDB()
     _SaveGlyphs(trans);
     _SaveInstanceTimeRestrictions(trans);
     _SaveCurrency();
+    _SaveConquestPointsWeekCap();
 
     // check if stats should only be saved on logout
     // save stats can be out of transaction
@@ -18989,6 +19043,16 @@ void Player::_SaveCurrency()
             ++itr;
         }
 
+    }
+}
+
+void Player::_SaveConquestPointsWeekCap()
+{
+    for (uint8 source=0; source < CP_SOURCE_MAX; source++)
+    {
+        CharacterDatabase.PExecute("DELETE FROM character_cp_weekcap WHERE guid = '%u'", GetGUIDLow());
+        CharacterDatabase.PExecute("INSERT INTO character_cp_weekcap (guid, source, maxWeekRating, weekCap) VALUES ('%u','%u','%u','%u')",
+            GetGUIDLow(), source, m_maxWeekRating[source], m_conquestPointsWeekCap[source] );
     }
 }
 
@@ -20427,8 +20491,18 @@ inline bool Player::_StoreOrEquipNewItem(uint32 vendorslot, uint32 item, uint8 c
 
         for (int i = 0; i < MAX_EXTENDED_COST_CURRENCIES; ++i)
         {
-            if (iece->RequiredCurrency[i])
+            switch (iece->RequiredCurrency[i])
+            {
+            case NULL: break;
+            case CURRENCY_TYPE_CONQUEST_POINTS: // There are currencies that include multiplier in dbc
+            case CURRENCY_TYPE_HONOR_POINTS:
+            case CURRENCY_TYPE_JUSTICE_POINTS:
+            case CURRENCY_TYPE_VALOR_POINTS:
                 ModifyCurrency(iece->RequiredCurrency[i], -int32(iece->RequiredCurrencyCount[i] * count));
+                break;
+            default: // other ones need multiplier
+                ModifyCurrency(iece->RequiredCurrency[i], -int32(iece->RequiredCurrencyCount[i] * count * PLAYER_CURRENCY_PRECISION));
+            }
         }
     }
 
@@ -20553,10 +20627,25 @@ bool Player::BuyItemFromVendorSlot(uint64 vendorguid, uint32 vendorslot, uint32 
         // currency price
         for (uint8 i = 0; i < MAX_EXTENDED_COST_CURRENCIES; ++i)
         {
-            if (iece->RequiredCurrency[i] && !HasCurrency(iece->RequiredCurrency[i], iece->RequiredCurrencyCount[i]))
+            switch (iece->RequiredCurrency[i])
             {
-                SendEquipError(EQUIP_ERR_VENDOR_MISSING_TURNINS, NULL, NULL);
-                return false;
+            case NULL: break;
+            case CURRENCY_TYPE_CONQUEST_POINTS: // There are currencies that include multiplier in dbc
+            case CURRENCY_TYPE_HONOR_POINTS:
+            case CURRENCY_TYPE_JUSTICE_POINTS:
+            case CURRENCY_TYPE_VALOR_POINTS:
+                if (!HasCurrency(iece->RequiredCurrency[i], iece->RequiredCurrencyCount[i]))
+                {
+                    SendEquipError(EQUIP_ERR_VENDOR_MISSING_TURNINS, NULL, NULL);
+                    return false;
+                }
+                break;
+            default: // other ones need multiplier
+                if (!HasCurrency(iece->RequiredCurrency[i], iece->RequiredCurrencyCount[i] * PLAYER_CURRENCY_PRECISION))
+                {
+                    SendEquipError(EQUIP_ERR_VENDOR_MISSING_TURNINS, NULL, NULL);
+                    return false;
+                }
             }
         }
 
@@ -22031,9 +22120,49 @@ void Player::ResetWeeklyQuestStatus()
     m_weeklyquests.clear();
     // DB data deleted in caller
     m_WeeklyQuestChanged = false;
+}
 
+void Player::ResetCurrencyWeekCap()
+{
     for (PlayerCurrenciesMap::iterator itr = m_currencies.begin(); itr != m_currencies.end(); ++itr)
-        itr->second.weekCount = 0;                  // no need to change state here as sWorld resets currencies in DB
+        itr->second.weekCount = 0;
+
+    // Calculating week cap for conquest points
+    CharacterDatabase.Execute("UPDATE character_cp_weekcap SET weekCap = ROUND(1.4326 * (1511.26 / (1 + 1639.28 / exp(0.00412 * `maxWeekRating`))) + 857.15) WHERE `source`=0 AND `maxWeekRating` BETWEEN 1500 AND 3000");
+    CharacterDatabase.PExecute("UPDATE character_cp_weekcap SET weekCap = '%u' WHERE `source`=0 AND `maxWeekRating` < 1500", PLAYER_DEFAULT_CONQUEST_POINTS_WEEK_CAP);
+    CharacterDatabase.Execute("UPDATE character_cp_weekcap SET weekCap =3000 WHERE `source`=0 AND `maxWeekRating` > 3000");
+    CharacterDatabase.Execute("UPDATE character_cp_weekcap SET maxWeekRating=0");
+    
+    if (m_maxWeekRating[CP_SOURCE_ARENA] <= 1500)
+        m_conquestPointsWeekCap[CP_SOURCE_ARENA] = PLAYER_DEFAULT_CONQUEST_POINTS_WEEK_CAP;
+    else if (m_maxWeekRating[CP_SOURCE_ARENA] > 3000)
+        m_conquestPointsWeekCap[CP_SOURCE_ARENA] = 3000;
+    else
+        m_conquestPointsWeekCap[CP_SOURCE_ARENA] = uint16(1.4326 * (1511.26 / (1 + 1639.28 / exp(0.00412 * m_maxWeekRating[CP_SOURCE_ARENA]))) + 857.15);
+    
+    m_maxWeekRating[CP_SOURCE_ARENA] = 0; // player must win at least 1 arena for week to change m_conquestPointsWeekCap
+
+    _SaveConquestPointsWeekCap();
+    _SaveCurrency();
+    SendCurrencies();
+
+
+    // Arena Teams
+    for (uint32 arena_slot = 0; arena_slot < MAX_ARENA_SLOT; ++arena_slot)
+    {
+        uint32 arena_team_id = GetArenaTeamId(arena_slot);
+        if (!arena_team_id)
+            continue;
+        ArenaTeam* arenaTeam = sObjectMgr->GetArenaTeamById(arena_team_id);
+        arenaTeam->FinishWeek();
+        arenaTeam->SaveToDB();
+        arenaTeam->NotifyStatsChanged();
+    }
+}
+
+void Player::UpdateMaxWeekRating(ConquestPointsSources source, uint8 slot)
+{
+    m_maxWeekRating[source] = std::max( m_maxWeekRating[source], (uint16)GetArenaPersonalRating(slot) );
 }
 
 Battleground* Player::GetBattleground() const
@@ -25154,4 +25283,75 @@ void Player::BroadcastMessage(const char* Format, ...)
 void Player::SendToManyPets(Player *pl)
 {
     ChatHandler(pl).PSendSysMessage(LANG_FAILED_NO_PLACE_FOR_PET);
+}
+
+void Player::RemoveOrAddMasterySpells()
+{
+    if (!HasAuraType(SPELL_AURA_MASTERY) || GetTalentBranchSpec(GetActiveSpec()) == 0)
+    {
+        if (HasAura(77514))
+            RemoveAurasDueToSpell(77514);
+
+        if (HasAura(77515))
+            RemoveAurasDueToSpell(77515);
+
+        if (HasAura(77493))
+            RemoveAurasDueToSpell(77493);
+
+        if (HasAura(76658))
+            RemoveAurasDueToSpell(76658);
+
+        if (HasAura(76657))
+            RemoveAurasDueToSpell(76657);
+
+        if (HasAura(76595))
+            RemoveAurasDueToSpell(76595);
+
+        if (HasAura(76671))
+            RemoveAurasDueToSpell(76671);
+
+        if (HasAura(77220))
+            RemoveAurasDueToSpell(77220);
+
+        if (HasAura(76857))
+            RemoveAurasDueToSpell(76857);
+    }
+    else if (HasAuraType(SPELL_AURA_MASTERY))
+    {
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_DEATH_KNIGHT_FROST)
+            if (!HasAura(77514))
+             AddAura(77514, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_DEATH_KNIGHT_UNHOLY)
+            if (!HasAura(77515))
+                AddAura(77515, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_DRUID_FERAL_COMBAT)
+            if (!HasAura(77493))
+                AddAura(77493, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_HUNTER_SURVIVAL)
+            if (!HasAura(76658))
+                AddAura(76658, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_HUNTER_BEAST_MASTERY)
+            if (!HasAura(76657))
+                AddAura(76657, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_MAGE_FIRE)
+            if (!HasAura(76595))
+                AddAura(76595, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_PALADIN_HOLY)
+            if (!HasAura(76671))
+                AddAura(76671, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_WARLOCK_DESTRUCTION)
+            if (!HasAura(77220))
+                AddAura(77220, this);
+
+        if (GetTalentBranchSpec(GetActiveSpec()) == BS_WARRIOR_PROTECTION)
+            if (!HasAura(76857))
+                AddAura(76857, this);
+    }
 }

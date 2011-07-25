@@ -234,7 +234,7 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectActivateSpec,                             //162 SPELL_EFFECT_TALENT_SPEC_SELECT       activate primary/secondary spec
     &Spell::EffectNULL,                                     //163 unused
     &Spell::EffectRemoveAura,                               //164 SPELL_EFFECT_REMOVE_AURA
-    &Spell::EffectNULL,                                     //165
+    &Spell::EffectDamageSelfPct,                            //165
     &Spell::EffectNULL,                                     //166
     &Spell::EffectNULL,                                     //167
     &Spell::EffectNULL,                                     //168
@@ -449,15 +449,15 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                         damage = unitTarget->CountPctFromMaxHealth(damage);
                         break;
                     }
-					// Crystalspawn Giant - Quake
-					case 81008:
-					case 92631:
-					{
-						//avoid damage when players jumps
-						if (unitTarget->GetUnitMovementFlags() == MOVEMENTFLAG_JUMPING || unitTarget->GetTypeId() != TYPEID_PLAYER)
-							return;
-						break;
-					}
+                    // Crystalspawn Giant - Quake
+                    case 81008:
+                    case 92631:
+                    {
+                        //avoid damage when players jumps
+                        if (unitTarget->GetUnitMovementFlags() == MOVEMENTFLAG_JUMPING || unitTarget->GetTypeId() != TYPEID_PLAYER)
+                            return;
+                        break;
+                    }
                     // Gargoyle Strike
                     case 51963:
                     {
@@ -647,7 +647,7 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                         m_caster->CastCustomSpell(m_caster, 32409, &back_damage, 0, 0, true);
                 }
                 // Mind Blast - applies Mind Trauma if:
-                else if (m_spellInfo->SpellFamilyFlags[2] & 0x00002000)
+                else if (m_spellInfo->Id == 8092)
                 {
                     // We are in Shadow Form
                     if (m_caster->GetShapeshiftForm() == FORM_SHADOW)
@@ -656,6 +656,10 @@ void Spell::SpellDamageSchoolDmg(SpellEffIndex effIndex)
                             // Chance has been successfully rolled
                             if (roll_chance_i(aurEff->GetAmount()))
                                 m_caster->CastSpell(unitTarget, 48301, true);
+
+                    //Mind Melt Aura remove
+                    m_caster->RemoveAurasDueToSpell(87160);
+                    m_caster->RemoveAurasDueToSpell(81292);
                 }
                 // Improved Mind Blast (Mind Blast in shadow form bonus)
                 else if (m_caster->GetShapeshiftForm() == FORM_SHADOW && (m_spellInfo->SpellFamilyFlags[0] & 0x00002000))
@@ -1523,7 +1527,8 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 if (m_caster->HasAura(64976))
                 {
                     m_caster->CastSpell(m_caster, 65156, true);
-                    m_caster->CastSpell(m_caster, 96216, true);
+                    m_caster->ToPlayer()->AddSpellCooldown(20252, 0, time(NULL) + 30);
+                    
                 }
                 return;
             }
@@ -1580,7 +1585,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 {
                     //Juggernaut CD part
                     if (m_caster->HasAura(64976))
-                        m_caster->CastSpell(m_caster, 96215, true);
+                        m_caster->ToPlayer()->AddSpellCooldown(100, 0, time(NULL) + 13); //15 - 2 from Juggernaut
                     return;
                 }
             }
@@ -3034,7 +3039,7 @@ void Spell::EffectPersistentAA(SpellEffIndex effIndex)
         // Caster not in world, might be spell triggered from aura removal
         if (!caster->IsInWorld())
             return;
-			
+            
         DynamicObject* dynObj = new DynamicObject;
         if (!dynObj->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_DYNAMICOBJECT), caster, m_spellInfo->Id, m_targets.m_dstPos, radius, false))
         {
@@ -3621,7 +3626,7 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
                         summon = m_originalCaster->SummonCreature(entry, pos, summonType, duration);
                         if (!summon)
                             continue;
-							
+                            
                         if (properties->Category == SUMMON_CATEGORY_ALLY)
                         {
                             summon->SetUInt64Value(UNIT_FIELD_SUMMONEDBY, m_originalCaster->GetGUID());
@@ -3891,7 +3896,7 @@ void Spell::EffectAddFarsight(SpellEffIndex effIndex)
         delete dynObj;
         return;
     }
-	
+    
     dynObj->SetDuration(duration);
     dynObj->SetUInt32Value(DYNAMICOBJECT_BYTES, 0x80000002);
     
@@ -7872,4 +7877,15 @@ void Spell::EffectBind(SpellEffIndex effIndex)
     data << uint64(player->GetGUID());
     data << uint32(area_id);
     player->SendDirectMessage(&data);
+}
+void Spell::EffectDamageSelfPct(SpellEffIndex effIndex)
+{
+    if (!unitTarget || !unitTarget->isAlive() || damage < 0)
+        return;
+
+    // Skip if m_originalCaster not available
+    if (!m_originalCaster)
+        return;
+
+    m_damage += m_originalCaster->SpellDamageBonus(unitTarget, m_spellInfo, effIndex, unitTarget->CountPctFromMaxHealth(damage), SELF_DAMAGE);
 }
