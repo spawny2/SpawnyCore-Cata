@@ -50,17 +50,17 @@ enum eDeathKnightSpells
 #define EVENT_BLOOD_STRIKE              3
 #define EVENT_DEATH_COIL                4
 
-//used by 29519,29520,29565,29566,29567 but signed for 29519
+//used by 29519, 29520, 29565, 29566, 29567 but signed for 29519
 int32 say_event_start[8] =
 {
-    -1609000,-1609001,-1609002,-1609003,
-    -1609004,-1609005,-1609006,-1609007
+    -1609000, -1609001, -1609002, -1609003,
+    -1609004, -1609005, -1609006, -1609007
 };
 
 int32 say_event_attack[9] =
 {
-    -1609008,-1609009,-1609010,-1609011,-1609012,
-    -1609013,-1609014,-1609015,-1609016
+    -1609008, -1609009, -1609010, -1609011, -1609012,
+    -1609013, -1609014, -1609015, -1609016
 };
 
 uint32 acherus_soul_prison[12] =
@@ -199,7 +199,7 @@ public:
 
                     for (uint8 i = 0; i < 12; ++i)
                     {
-                        if (GameObject* temp_prison = me->FindNearestGameObject(acherus_soul_prison[i],30))
+                        if (GameObject* temp_prison = me->FindNearestGameObject(acherus_soul_prison[i], 30))
                         {
                             if (me->IsWithinDist(temp_prison, dist, false))
                             {
@@ -288,7 +288,6 @@ public:
     };
 };
 
-
 class npc_unworthy_initiate_anchor : public CreatureScript
 {
 public:
@@ -313,11 +312,7 @@ public:
 
         uint64 GetGUID(int32 /*id*/) { return prisonerGUID; }
     };
-
 };
-
-
-
 
 class go_acherus_soul_prison : public GameObjectScript
 {
@@ -333,7 +328,124 @@ public:
 
         return false;
     }
+};
 
+/*######
+## npc_eye_of_acherus
+######*/
+
+enum EyeOfAcherus
+{
+    DISPLAYID_EYE_HUGE      = 26320,
+    DISPLAYID_EYE_SMALL     = 25499,
+
+    SPELL_EYE_PHASEMASK     = 70889,
+    SPELL_EYE_VISUAL        = 51892,
+    SPELL_EYE_FL_BOOST_RUN  = 51923,
+    SPELL_EYE_FL_BOOST_FLY  = 51890,
+    SPELL_EYE_CONTROL       = 51852,
+};
+//#define SAY_EYE_LAUNCHED          "Eye of Acherus is launched towards its destination."
+//#define SAY_EYE_UNDER_CONTROL     "You are now in control of the eye."
+
+// for some reason yells aren't working correctly yet.
+enum YELLS
+{
+    SAY_EYE_LAUNCHED            = -1666451,
+    SAY_EYE_UNDER_CONTROL       = -1666452
+};
+
+static Position Center[]=
+{
+    {2346.550049f, -5694.430176f, 426.029999f, 0.0f},
+};
+
+class npc_eye_of_acherus : public CreatureScript
+{
+public:
+    npc_eye_of_acherus() : CreatureScript("npc_eye_of_acherus") { }
+
+    CreatureAI* GetAI(Creature* pCreature) const
+    {
+        return new npc_eye_of_acherusAI(pCreature);
+    }
+
+    struct npc_eye_of_acherusAI : public ScriptedAI
+    {
+        npc_eye_of_acherusAI(Creature *pCreature) : ScriptedAI(pCreature)
+        {
+          Reset();
+        }
+
+        uint32 m_uiStartTimer;
+        bool m_bIsActive;
+
+		void Reset()
+        {
+            if (Unit* pController = me->GetCharmer())
+            me->SetLevel(pController->getLevel());
+
+            me->CastSpell(me, 51890, true);
+            me->SetDisplayId(26320);
+
+			DoScriptText(SAY_EYE_LAUNCHED, me);
+            me->SetHomePosition(2363.970589f, -5659.861328f, 504.316833f, 0);
+            me->GetMotionMaster()->MoveCharge(1752.858276f, -5878.270996f, 145.136444f, 0); //position center
+            me->SetReactState(REACT_AGGRESSIVE);
+            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_STUNNED);
+
+			m_bIsActive = false;
+            m_uiStartTimer = 2000;
+        }
+
+        void AttackStart(Unit *) {}
+        void MoveInLineOfSight(Unit *) {}
+
+        void JustDied(Unit* /*pKiller*/)
+        {
+            if (Unit* charmer = me->GetCharmer())
+               charmer->RemoveAurasDueToSpell(51852);
+        }
+
+        void UpdateAI(const uint32 uiDiff)
+        {
+            if (me->isCharmed())
+            {
+                if (m_uiStartTimer <=  uiDiff && !m_bIsActive)    // fly to start point
+                {
+                    me->CastSpell(me, 70889, true);
+                    me->CastSpell(me, 51892, true);
+                    me->CastSpell(me, 51890, true);
+
+                    // workaround for faster flight speed
+                    me->CastSpell(me, 51923, true);
+                    me->SetSpeed(MOVE_FLIGHT , 3.4f, true);
+
+                    me->GetMotionMaster()->MovePoint(0, 1711.0f, -5820.0f, 147.0f);
+                    return;    // was "me = true;" causing errors
+                }
+                else
+                m_uiStartTimer -= uiDiff;
+            }
+            else
+            me->ForcedDespawn();
+        }
+
+        void MovementInform(uint32 uiType, uint32 uiPointId)
+        {
+            if (uiType != POINT_MOTION_TYPE || uiPointId != 0)
+               return;
+
+            // I think those morphs are not blizzlike...
+            me->SetDisplayId(25499);
+
+            // for some reason it does not work when this spell is casted before the waypoint movement
+            me->CastSpell(me, 51892, true);
+            me->CastSpell(me, 51890, true);
+ 			DoScriptText(SAY_EYE_UNDER_CONTROL, me);
+			((Player*)(me->GetCharmer()))->SetClientControl(me, 1);
+        }
+    };
 };
 
 /*######
@@ -412,7 +524,7 @@ public:
                 return true;
 
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ACCEPT_DUEL, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
-            pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature),pCreature->GetGUID());
+            pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
         }
         return true;
     }
@@ -520,11 +632,7 @@ public:
             CombatAI::UpdateAI(uiDiff);
         }
     };
-
 };
-
-
-
 
 /*######
 ## npc_dark_rider_of_acherus
@@ -592,7 +700,6 @@ public:
                         break;
                 }
             } else PhaseTimer -= diff;
-
         }
 
         void InitDespawnHorse(Unit *who)
@@ -607,11 +714,8 @@ public:
             me->SetUInt64Value(UNIT_FIELD_TARGET, TargetGUID);
             Intro = true;
         }
-
     };
-
 };
-
 
 /*######
 ## npc_salanar_the_horseman
@@ -685,9 +789,7 @@ public:
             }
         }
     };
-
 };
-
 
 /*######
 ## npc_ros_dark_rider
@@ -735,9 +837,7 @@ public:
             }
         }
     };
-
 };
-
 
 // correct way: 52312 52314 52555 ...
 enum SG
@@ -784,9 +884,7 @@ public:
             }
         }
     };
-
 };
-
 
 class npc_scarlet_ghoul : public CreatureScript
 {
@@ -805,14 +903,14 @@ public:
             // Ghouls should display their Birth Animation
             // Crawling out of the ground
             //DoCast(me, 35177, true);
-            //me->MonsterSay("Mommy?",LANG_UNIVERSAL,0);
+            //me->MonsterSay("Mommy?", LANG_UNIVERSAL, 0);
             me->SetReactState(REACT_DEFENSIVE);
         }
 
         void FindMinions(Unit *owner)
         {
             std::list<Unit*> MinionList;
-            owner->GetAllMinionsByEntry(MinionList,GHOULS);
+            owner->GetAllMinionsByEntry(MinionList, GHOULS);
 
             if (!MinionList.empty())
             {
@@ -868,9 +966,7 @@ public:
             }
         }
     };
-
 };
-
 
 /*####
 ## npc_scarlet_miner_cart
@@ -925,9 +1021,7 @@ public:
                     miner->DisappearAndDie();
         }
     };
-
 };
-
 
 /*####
 ## npc_scarlet_miner
@@ -979,7 +1073,7 @@ public:
             AddWaypoint(11, 2202.595947f, -6061.325684f, 5.882018f);
             AddWaypoint(12, 2188.974609f, -6080.866699f, 3.370027f);
 
-            if (urand(0,1))
+            if (urand(0, 1))
             {
                 AddWaypoint(13, 2176.483887f, -6110.407227f, 1.855181f);
                 AddWaypoint(14, 2172.516602f, -6146.752441f, 1.074235f);
@@ -1015,7 +1109,7 @@ public:
                         me->SetInFront(car);
                         me->SendMovementFlagUpdate();
                     }
-                    me->MonsterSay(SAY_SCARLET_MINER1,LANG_UNIVERSAL,NULL);
+                    me->MonsterSay(SAY_SCARLET_MINER1, LANG_UNIVERSAL, NULL);
                     SetRun(true);
                     IntroTimer = 4000;
                     IntroPhase = 1;
@@ -1029,7 +1123,7 @@ public:
                         car->SendMonsterStop();
                         car->RemoveAura(SPELL_CART_DRAG);
                     }
-                    me->MonsterSay(SAY_SCARLET_MINER2,LANG_UNIVERSAL,NULL);
+                    me->MonsterSay(SAY_SCARLET_MINER2, LANG_UNIVERSAL, NULL);
                     break;
                 default:
                     break;
@@ -1060,9 +1154,7 @@ public:
             npc_escortAI::UpdateAI(diff);
         }
     };
-
 };
-
 
 /*######
 ## go_inconspicuous_mine_car
@@ -1080,7 +1172,7 @@ public:
         if (pPlayer->GetQuestStatus(12701) == QUEST_STATUS_INCOMPLETE)
         {
             // Hack Why Trinity Dont Support Custom Summon Location
-            if (Creature *miner = pPlayer->SummonCreature(28841, 2383.869629f, -5900.312500f, 107.996086f, pPlayer->GetOrientation(),TEMPSUMMON_DEAD_DESPAWN, 1))
+            if (Creature *miner = pPlayer->SummonCreature(28841, 2383.869629f, -5900.312500f, 107.996086f, pPlayer->GetOrientation(), TEMPSUMMON_DEAD_DESPAWN, 1))
             {
                 pPlayer->CastSpell(pPlayer, SPELL_CART_SUMM, true);
                 if (Creature *car = pPlayer->GetVehicleCreatureBase())
@@ -1095,7 +1187,6 @@ public:
         }
         return true;
     }
-
 };
 
 // npc 28912 quest 17217 boss 29001 mob 29007 go 191092
@@ -1105,7 +1196,8 @@ void AddSC_the_scarlet_enclave_c1()
     new npc_unworthy_initiate();
     new npc_unworthy_initiate_anchor();
     new go_acherus_soul_prison();
-    new npc_death_knight_initiate();
+    new npc_eye_of_acherus();
+	new npc_death_knight_initiate();
     new npc_salanar_the_horseman();
     new npc_dark_rider_of_acherus();
     new npc_ros_dark_rider();

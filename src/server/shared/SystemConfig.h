@@ -10,7 +10,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful, 
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
@@ -28,7 +28,7 @@
 #include "Define.h"
 #include "revision.h"
 
-#define _PACKAGENAME "SkyFireEMU "
+#define _PACKAGENAME "SkyFireEMU"
 #define _CODENAME "COLD_DAY_IN_HELL"
 
 #if TRINITY_ENDIAN == TRINITY_BIGENDIAN
@@ -39,12 +39,12 @@
 
 #if PLATFORM == PLATFORM_WINDOWS
 # ifdef _WIN64
-#  define _FULLVERSION _PACKAGENAME "Hash: " _HASH " (Win64, "_BUILD_DIRECTIVE " (" _ENDIAN_STRING "))"
+#  define _FULLVERSION _PACKAGENAME " rev. " VER_PRODUCTVERSION_STR " (Win64, "_BUILD_DIRECTIVE ")"
 # else
-#  define _FULLVERSION _PACKAGENAME "Hash: " _HASH " (Win32, " _BUILD_DIRECTIVE " (" _ENDIAN_STRING "))"
+#  define _FULLVERSION _PACKAGENAME " rev. " VER_PRODUCTVERSION_STR " (Win32, " _BUILD_DIRECTIVE ")"
 # endif
 #else
-#  define _FULLVERSION _PACKAGENAME "Hash: " _HASH " (Unix, " _BUILD_DIRECTIVE " (" _ENDIAN_STRING "))"
+#  define _FULLVERSION _PACKAGENAME " rev. " VER_PRODUCTVERSION_STR " (Unix, " _BUILD_DIRECTIVE ")"
 #endif
 #endif
 

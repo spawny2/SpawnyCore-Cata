@@ -50,7 +50,7 @@ void WorldSession::HandleJoinChannel(WorldPacket& recvPacket)
 
     recvPacket >> unknown1 >> unknown2;
     recvPacket >> pass;
-    recvPacket >> channelname;    
+    recvPacket >> channelname;
 
     if (channelname.empty())
         return;
@@ -321,4 +321,3 @@ void WorldSession::HandleSetChannelWatch(WorldPacket &recvPacket)
         if (Channel *chn = cMgr->GetChannel(channelname, _player))
             chn->JoinNotify(_player->GetGUID());*/
 }
-

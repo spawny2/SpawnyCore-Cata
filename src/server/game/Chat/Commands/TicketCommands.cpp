@@ -37,7 +37,7 @@ std::string ChatHandler::PGetParseString(int32 entry, ...)
     va_list ap;
     char str [1024];
     va_start(ap, entry);
-    vsnprintf(str,1024,format, ap);
+    vsnprintf(str, 1024, format, ap);
     va_end(ap);
     return (std::string)str;
 }
@@ -433,16 +433,10 @@ bool ChatHandler::HandleGMTicketDeleteByIdCommand(const char* args)
     return true;
 }
 
-bool ChatHandler::HandleGMTicketReloadCommand(const char* /* args */)
-{
-    sTicketMgr->LoadGMTickets();
-    return true;
-}
-
 bool ChatHandler::HandleToggleGMTicketSystem(const char* /* args */)
 {
     sTicketMgr->SetStatus(!sTicketMgr->GetStatus());
-    if(sTicketMgr->GetStatus())
+    if (sTicketMgr->GetStatus())
         PSendSysMessage(LANG_ALLOW_TICKETS);
     else
         PSendSysMessage(LANG_DISALLOW_TICKETS);

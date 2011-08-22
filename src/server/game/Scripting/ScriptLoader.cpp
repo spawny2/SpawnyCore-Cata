@@ -58,11 +58,17 @@ void AddSC_SmartSCripts();
 void AddSC_account_commandscript();
 void AddSC_achievement_commandscript();
 //void AddSC_gm_commandscript();
-void AddSC_npc_commandscript();
 //void AddSC_go_commandscript();
 //void AddSC_learn_commandscript();
 //void AddSC_modify_commandscript();
+void AddSC_npc_commandscript();
 void AddSC_debug_commandscript();
+void AddSC_reload_commandscript();
+void AddSC_titles_commandscript();
+void AddSC_wp_commandscript();
+void AddSC_gobject_commandscript();
+void AddSC_honor_commandscript();
+void AddSC_quest_commandscript();
 void AddSC_reload_commandscript();
 
 #ifdef SCRIPTS
@@ -404,6 +410,7 @@ void AddSC_boss_keristrasza();
 void AddSC_instance_nexus();
 void AddSC_boss_drakos();                //The Nexus The Oculus
 void AddSC_boss_urom();
+void AddSC_boss_varos();
 void AddSC_instance_oculus();
 void AddSC_oculus();
 void AddSC_boss_sartharion();            //Obsidian Sanctum
@@ -604,7 +611,7 @@ void AddSC_outdoorpvp_na();
 void AddSC_outdoorpvp_si();
 void AddSC_outdoorpvp_tf();
 void AddSC_outdoorpvp_zm();
-
+void AddSC_outdoorpvp_gh();
 // player
 void AddSC_chat_log();
 
@@ -666,11 +673,18 @@ void AddCommandScripts()
     AddSC_account_commandscript();
     AddSC_achievement_commandscript();
     //AddSC_gm_commandscript();
-    AddSC_npc_commandscript();
     //AddSC_go_commandscript();
     //AddSC_learn_commandscript();
     //AddSC_modify_commandscript();
-    AddSC_debug_commandscript();
+    AddSC_npc_commandscript();
+	AddSC_debug_commandscript();
+    AddSC_reload_commandscript();
+    AddSC_reload_commandscript();
+    AddSC_titles_commandscript();
+    AddSC_wp_commandscript();
+    AddSC_gobject_commandscript();
+    AddSC_honor_commandscript();
+    AddSC_quest_commandscript();
     AddSC_reload_commandscript();
 }
 
@@ -970,7 +984,7 @@ void AddKalimdorScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
-    
+
 #endif
 }
 
@@ -1114,6 +1128,7 @@ void AddNorthrendScripts()
     AddSC_instance_nexus();
     AddSC_boss_drakos();                //The Nexus The Oculus
     AddSC_boss_urom();
+    AddSC_boss_varos();
     AddSC_instance_oculus();
     AddSC_oculus();
     AddSC_boss_sartharion();            //Obsidian Sanctum
@@ -1234,6 +1249,7 @@ void AddOutdoorPvPScripts()
     AddSC_outdoorpvp_si();
     AddSC_outdoorpvp_tf();
     AddSC_outdoorpvp_zm();
+    AddSC_outdoorpvp_gh();
 #endif
 }
 

@@ -107,7 +107,7 @@ enum Spells
     SPELL_MUTATED_TRANSFORMATION_NAME     = 72401,
 };
 
-#define SPELL_GASEOUS_BLOAT_HELPER RAID_MODE<uint32>(70672,72455,72832,72833)
+#define SPELL_GASEOUS_BLOAT_HELPER RAID_MODE<uint32>(70672, 72455, 72832, 72833)
 
 enum Events
 {
@@ -204,6 +204,7 @@ class boss_professor_putricide : public CreatureScript
                     instance->SetBossState(DATA_PROFESSOR_PUTRICIDE, NOT_STARTED);
                 instance->SetData(DATA_NAUSEA_ACHIEVEMENT, uint32(true));
 
+                me->setActive(true);
                 events.Reset();
                 summons.DespawnAll();
                 _SetPhase(PHASE_COMBAT_1);
@@ -286,6 +287,7 @@ class boss_professor_putricide : public CreatureScript
                             summon->ClearUnitState(UNIT_STAT_CASTING);
                             summon->GetMotionMaster()->MoveIdle();
                             summon->m_Events.AddEvent(new StartMovementEvent(*summon), summon->m_Events.CalculateTime(3500));
+                            me->SetReactState(REACT_PASSIVE);
                         }
                         return;
                     case NPC_VOLATILE_OOZE:
